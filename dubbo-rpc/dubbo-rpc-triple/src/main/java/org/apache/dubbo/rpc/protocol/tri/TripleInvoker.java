@@ -59,6 +59,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -83,6 +84,7 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
     private final ExecutorService streamExecutor;
     private final String acceptEncodings;
     private final TripleWriteQueue writeQueue = new TripleWriteQueue(256);
+    private final Executor directExecutor = Runnable::run;
 
     public TripleInvoker(Class<T> serviceType,
         URL url,
@@ -132,6 +134,8 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
         try {
             switch (methodDescriptor.getRpcType()) {
                 case UNARY:
+                    call = new TripleClientCall(connectionClient, directExecutor,
+                        getUrl().getOrDefaultFrameworkModel(), writeQueue);
                     result = invokeUnary(methodDescriptor, invocation, call);
                     break;
                 case SERVER_STREAM:
