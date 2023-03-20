@@ -21,6 +21,7 @@ import org.apache.dubbo.common.logger.ErrorTypeAwareLogger;
 import io.netty.handler.codec.http2.Http2Exception;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.stream.StreamObserver;
+import org.apache.dubbo.common.utils.CacheableSupplier;
 import org.apache.dubbo.remoting.api.connection.AbstractConnectionClient;
 import org.apache.dubbo.rpc.TriRpcStatus;
 import org.apache.dubbo.rpc.model.FrameworkModel;
@@ -35,8 +36,10 @@ import org.apache.dubbo.rpc.protocol.tri.transport.TripleWriteQueue;
 
 import io.netty.channel.Channel;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 import static org.apache.dubbo.common.constants.LoggerCodeConstants.PROTOCOL_FAILED_RESPONSE;
 import static org.apache.dubbo.common.constants.LoggerCodeConstants.PROTOCOL_FAILED_SERIALIZE_TRIPLE;
@@ -77,8 +80,14 @@ public class TripleClientCall implements ClientCall, ClientStream.Listener {
             return;
         }
         try {
-            final Object unpacked = requestMetadata.packableMethod.parseResponse(message);
-            listener.onMessage(unpacked);
+            Supplier<Object> unpackedSupplier = ()->{
+                try {
+                    return requestMetadata.packableMethod.parseResponse(message);
+                } catch (IOException | ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+            listener.onMessage(unpackedSupplier);
         } catch (Throwable t) {
             cancelByLocal(TriRpcStatus.INTERNAL.withDescription("Deserialize response failed")
                 .withCause(t).asException());
