@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class DeadlineFuture extends CompletableFuture<AppResponse> {
 
@@ -132,6 +133,11 @@ public class DeadlineFuture extends CompletableFuture<AppResponse> {
         // because the completelyExceptionally method will lead to the onError method in the filter,
         // but there are also exceptions in the onResponse in the filter,which is a bit confusing.
         // We recommend only handling onResponse in which onError is called for handling
+        Object value = appResponse.getValue();
+        if (value instanceof Supplier) {
+            Object actuallyResult = ((Supplier<?>) value).get();
+            appResponse.setValue(actuallyResult);
+        }
         this.complete(appResponse);
 
 
