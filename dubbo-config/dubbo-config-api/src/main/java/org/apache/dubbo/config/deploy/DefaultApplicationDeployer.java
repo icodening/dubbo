@@ -840,37 +840,37 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
             eventMulticaster.publishErrorEvent(new RegistryEvent.MetricsRegisterEvent(applicationModel, timePair));
             logger.error(CONFIG_REGISTER_INSTANCE_ERROR, "configuration server disconnected", "", "Register instance error.", e);
         }
-        if (registered) {
-            // scheduled task for updating Metadata and ServiceInstance
-            asyncMetadataFuture = frameworkExecutorRepository.getSharedScheduledExecutor().scheduleWithFixedDelay(() -> {
-
-                // ignore refresh metadata on stopping
-                if (applicationModel.isDestroyed()) {
-                    return;
-                }
-
-                // refresh for 30 times (default for 30s) when deployer is not started, prevent submit too many revision
-                if (instanceRefreshScheduleTimes.incrementAndGet() % 30 != 0 && !isStarted()) {
-                    return;
-                }
-
-                // refresh for 5 times (default for 5s) when services are being updated by other threads, prevent submit too many revision
-                // note: should not always wait here
-                if (serviceRefreshState.get() != 0 && instanceRefreshScheduleTimes.get() % 5 != 0) {
-                    return;
-                }
-
-                try {
-                    if (!applicationModel.isDestroyed() && registered) {
-                        ServiceInstanceMetadataUtils.refreshMetadataAndInstance(applicationModel);
-                    }
-                } catch (Exception e) {
-                    if (!applicationModel.isDestroyed()) {
-                        logger.error(CONFIG_REFRESH_INSTANCE_ERROR, "", "", "Refresh instance and metadata error.", e);
-                    }
-                }
-            }, 0, ConfigurationUtils.get(applicationModel, METADATA_PUBLISH_DELAY_KEY, DEFAULT_METADATA_PUBLISH_DELAY), TimeUnit.MILLISECONDS);
-        }
+//        if (registered) {
+//            // scheduled task for updating Metadata and ServiceInstance
+//            asyncMetadataFuture = frameworkExecutorRepository.getSharedScheduledExecutor().scheduleWithFixedDelay(() -> {
+//
+//                // ignore refresh metadata on stopping
+//                if (applicationModel.isDestroyed()) {
+//                    return;
+//                }
+//
+//                // refresh for 30 times (default for 30s) when deployer is not started, prevent submit too many revision
+//                if (instanceRefreshScheduleTimes.incrementAndGet() % 30 != 0 && !isStarted()) {
+//                    return;
+//                }
+//
+//                // refresh for 5 times (default for 5s) when services are being updated by other threads, prevent submit too many revision
+//                // note: should not always wait here
+//                if (serviceRefreshState.get() != 0 && instanceRefreshScheduleTimes.get() % 5 != 0) {
+//                    return;
+//                }
+//
+//                try {
+//                    if (!applicationModel.isDestroyed() && registered) {
+//                        ServiceInstanceMetadataUtils.refreshMetadataAndInstance(applicationModel);
+//                    }
+//                } catch (Exception e) {
+//                    if (!applicationModel.isDestroyed()) {
+//                        logger.error(CONFIG_REFRESH_INSTANCE_ERROR, "", "", "Refresh instance and metadata error.", e);
+//                    }
+//                }
+//            }, 0, ConfigurationUtils.get(applicationModel, METADATA_PUBLISH_DELAY_KEY, DEFAULT_METADATA_PUBLISH_DELAY), TimeUnit.MILLISECONDS);
+//        }
     }
 
     @Override
