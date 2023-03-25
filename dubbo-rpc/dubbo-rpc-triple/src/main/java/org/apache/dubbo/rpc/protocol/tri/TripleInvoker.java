@@ -98,7 +98,7 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
         this.connectionClient = connectionClient;
         this.acceptEncodings = acceptEncodings;
         this.streamExecutor = streamExecutor;
-        this.executor = new SerializingExecutor(streamExecutor);
+        this.executor = Runnable::run;
     }
 
     private static AsciiString getSchemeFromUrl(URL url) {
