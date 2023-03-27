@@ -45,7 +45,7 @@ public interface ClientCall {
          *
          * @param messageProducer message producer
          */
-        void onMessage(MessageProducer messageProducer);
+        void onMessage(Object messageProducer);
 
         /**
          * Callback when call is finished.

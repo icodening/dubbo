@@ -24,7 +24,6 @@ import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.common.logger.ErrorTypeAwareLogger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.common.utils.ExecutorUtil;
 import org.apache.dubbo.remoting.api.connection.AbstractConnectionClient;
 import org.apache.dubbo.rpc.AppResponse;
 import org.apache.dubbo.rpc.AsyncRpcResult;
@@ -128,14 +127,14 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
             invocation.getParameterTypes());
         ClientCall call = new TripleClientCall(connectionClient, streamExecutor,
             getUrl().getOrDefaultFrameworkModel(), writeQueue);
-
+        ExecutorService callbackExecutor = getCallbackExecutor(getUrl(), invocation);
         AsyncRpcResult result;
         try {
             switch (methodDescriptor.getRpcType()) {
                 case UNARY:
-                    call = new TripleClientCall(connectionClient, ExecutorUtil.directExecutor(),
+                    call = new TripleClientCall(connectionClient, callbackExecutor,
                         getUrl().getOrDefaultFrameworkModel(), writeQueue);
-                    result = invokeUnary(methodDescriptor, invocation, call);
+                    result = invokeUnary(methodDescriptor, invocation, call, callbackExecutor);
                     break;
                 case SERVER_STREAM:
                     result = invokeServerStream(methodDescriptor, invocation, call);
@@ -202,8 +201,7 @@ public class TripleInvoker<T> extends AbstractInvoker<T> {
     }
 
     AsyncRpcResult invokeUnary(MethodDescriptor methodDescriptor, Invocation invocation,
-                               ClientCall call) {
-        ExecutorService callbackExecutor = getCallbackExecutor(getUrl(), invocation);
+                               ClientCall call, ExecutorService callbackExecutor) {
 
         int timeout = RpcUtils.calculateTimeout(getUrl(), invocation, invocation.getMethodName(), 3000);
         if (timeout <= 0) {

@@ -77,9 +77,8 @@ public class TripleClientCall implements ClientCall, ClientStream.Listener {
             return;
         }
         try {
-            TripleMessageProducer messageProducer = TripleMessageProducer.withSupplier(() ->
-                    requestMetadata.packableMethod.parseResponse(message));
-            listener.onMessage(messageProducer);
+            Object response = requestMetadata.packableMethod.parseResponse(message);
+            listener.onMessage(response);
         } catch (Throwable t) {
             onDeserializeError(t);
         }

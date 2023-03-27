@@ -44,9 +44,7 @@ public class ThreadlessExecutor extends AbstractExecutorService {
 
     private boolean finished = false;
 
-    private volatile boolean waiting = true;
-
-    private final Object lock = new Object();
+    private volatile boolean waiting = false;
 
     public CompletableFuture<?> getWaitingFuture() {
         return waitingFuture;
@@ -86,30 +84,20 @@ public class ThreadlessExecutor extends AbstractExecutorService {
          * 'finished' only appear in waitAndDrain, since waitAndDrain is binding to one RPC call (one thread), the call
          * of it is totally sequential.
          */
-        if (isFinished()) {
-            return;
-        }
 
         Runnable runnable;
         try {
             runnable = queue.take();
+            runnable.run();
         } catch (InterruptedException e) {
-            setWaiting(false);
+            e.printStackTrace();
             throw e;
         }
-
-        synchronized (lock) {
-            setWaiting(false);
-            runnable.run();
-        }
-
         runnable = queue.poll();
         while (runnable != null) {
             runnable.run();
             runnable = queue.poll();
         }
-        // mark the status of ThreadlessExecutor as finished.
-        setFinished(true);
     }
 
     /**
@@ -120,14 +108,7 @@ public class ThreadlessExecutor extends AbstractExecutorService {
      */
     @Override
     public void execute(Runnable runnable) {
-        runnable = new RunnableWrapper(runnable);
-        synchronized (lock) {
-            if (!isWaiting()) {
-                runnable.run();
-                return;
-            }
-            queue.add(runnable);
-        }
+        queue.add(new RunnableWrapper(runnable));
     }
 
     /**

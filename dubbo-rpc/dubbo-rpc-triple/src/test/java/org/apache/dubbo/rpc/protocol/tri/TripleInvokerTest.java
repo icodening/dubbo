@@ -37,6 +37,7 @@ import org.mockito.Mockito;
 
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -69,7 +70,7 @@ class TripleInvokerTest {
         MethodDescriptor echoMethod = new ReflectionMethodDescriptor(
                 IGreeter.class.getDeclaredMethod("echo", String.class));
         Assertions.assertTrue(invoker.isAvailable());
-        invoker.invokeUnary(echoMethod, invocation, call);
+        invoker.invokeUnary(echoMethod, invocation, call, Executors.newSingleThreadExecutor());
         invoker.destroy();
         Assertions.assertFalse(invoker.isAvailable());
     }
