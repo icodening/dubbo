@@ -21,11 +21,13 @@ import org.apache.dubbo.common.logger.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * The most important difference between this Executor and other normal Executor is that this one doesn't manage
@@ -38,7 +40,12 @@ import java.util.concurrent.TimeUnit;
 public class ThreadlessExecutor extends AbstractExecutorService {
     private static final Logger logger = LoggerFactory.getLogger(ThreadlessExecutor.class.getName());
 
-    private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>();
+    private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+
+    private static final Object SHUTDOWN = new Object(); // sentinel
+
+    // Set to the calling thread while it's parked, SHUTDOWN on RPC completion
+    private volatile Object waiter;
 
     private CompletableFuture<?> waitingFuture;
 
@@ -84,19 +91,35 @@ public class ThreadlessExecutor extends AbstractExecutorService {
          * 'finished' only appear in waitAndDrain, since waitAndDrain is binding to one RPC call (one thread), the call
          * of it is totally sequential.
          */
-
-        Runnable runnable;
-        try {
-            runnable = queue.take();
-            runnable.run();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            throw e;
+        throwIfInterrupted();
+        Runnable runnable = queue.poll();
+        if (runnable == null) {
+            waiter = Thread.currentThread();
+            try {
+                while ((runnable = queue.poll()) == null) {
+                    LockSupport.park(this);
+                    throwIfInterrupted();
+                }
+            } finally {
+                waiter = null;
+            }
         }
-        runnable = queue.poll();
-        while (runnable != null) {
+        do {
+            runQuietly(runnable);
+        } while ((runnable = queue.poll()) != null);
+    }
+
+    private static void runQuietly(Runnable runnable) {
+        try {
             runnable.run();
-            runnable = queue.poll();
+        } catch (Throwable t) {
+            logger.warn("Runnable threw exception", t);
+        }
+    }
+
+    private static void throwIfInterrupted() throws InterruptedException {
+        if (Thread.interrupted()) {
+            throw new InterruptedException();
         }
     }
 
@@ -109,6 +132,12 @@ public class ThreadlessExecutor extends AbstractExecutorService {
     @Override
     public void execute(Runnable runnable) {
         queue.add(new RunnableWrapper(runnable));
+        Object waiter = this.waiter;
+        if (waiter != SHUTDOWN) {
+            LockSupport.unpark((Thread) waiter); // no-op if null
+        } else if (queue.remove(runnable)) {
+            throw new RejectedExecutionException();
+        }
     }
 
     /**
