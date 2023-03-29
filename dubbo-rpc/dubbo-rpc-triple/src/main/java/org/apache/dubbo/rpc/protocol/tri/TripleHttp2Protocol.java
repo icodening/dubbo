@@ -173,6 +173,7 @@ public class TripleHttp2Protocol extends AbstractWireProtocol implements ScopeMo
             new TripleClientHandler(frameworkModel));
         List<ChannelHandler> handlers = new ArrayList<>();
         handlers.add(new ChannelHandlerPretender(codec));
+        handlers.add(new ChannelHandlerPretender(new TripleCommandOutBoundHandler()));
         handlers.add(new ChannelHandlerPretender(handler));
         handlers.add(new ChannelHandlerPretender(new TripleTailHandler()));
         operator.configChannelHandler(handlers);

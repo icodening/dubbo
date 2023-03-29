@@ -17,6 +17,8 @@
 
 package org.apache.dubbo.rpc.protocol.tri.stream;
 
+import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import org.apache.dubbo.common.logger.ErrorTypeAwareLogger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.rpc.TriRpcStatus;
@@ -93,7 +95,7 @@ public class TripleClientStream extends AbstractStream implements ClientStream {
         this.parent = http2StreamChannel.parent();
         this.listener = listener;
         this.writeQueue = writeQueue;
-        this.streamChannelFuture = initHttp2StreamChannel(http2StreamChannel);
+        this.streamChannelFuture = new TripleStreamChannelFuture(parent);
     }
 
     public TripleClientStream(FrameworkModel frameworkModel,
@@ -105,24 +107,7 @@ public class TripleClientStream extends AbstractStream implements ClientStream {
         this.parent = parent;
         this.listener = listener;
         this.writeQueue = writeQueue;
-        this.streamChannelFuture = initHttp2StreamChannel(parent);
-    }
-
-    private TripleStreamChannelFuture initHttp2StreamChannel(Channel parent) {
-        TripleStreamChannelFuture streamChannelFuture = new TripleStreamChannelFuture(parent);
-        Http2StreamChannelBootstrap bootstrap = new Http2StreamChannelBootstrap(parent);
-        bootstrap.handler(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-                    Channel channel = ctx.channel();
-                    channel.pipeline().addLast(new TripleCommandOutBoundHandler());
-                    channel.pipeline().addLast(new TripleHttp2ClientResponseHandler(createTransportListener()));
-                    channel.closeFuture().addListener(f -> transportException(f.cause()));
-                }
-            });
-        CreateStreamQueueCommand cmd = CreateStreamQueueCommand.create(bootstrap, streamChannelFuture);
-        this.writeQueue.enqueue(cmd);
-        return streamChannelFuture;
+        this.streamChannelFuture = new TripleStreamChannelFuture(parent);
     }
 
 
@@ -135,8 +120,24 @@ public class TripleClientStream extends AbstractStream implements ClientStream {
         if (!checkResult.isSuccess()) {
             return checkResult;
         }
-        final HeaderQueueCommand headerCmd = HeaderQueueCommand.createHeaders(streamChannelFuture, headers);
-        return writeQueue.enqueueFuture(headerCmd, parent.eventLoop()).addListener(future -> {
+        Http2StreamChannelBootstrap bootstrap = new Http2StreamChannelBootstrap(parent);
+        bootstrap.handler(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+                Channel channel = ctx.channel();
+                channel.pipeline().addLast(new TripleHttp2ClientResponseHandler(createTransportListener()));
+                channel.closeFuture().addListener(f -> transportException(f.cause()));
+            }
+        });
+        CreateStreamQueueCommand cmd = CreateStreamQueueCommand.create(bootstrap, streamChannelFuture);
+        ChannelPromise promise = parent.newPromise();
+        streamChannelFuture.whenComplete((h2StreamChannel, throwable) ->{
+            if (throwable != null) {
+                return;
+            }
+            h2StreamChannel.write(new DefaultHttp2HeadersFrame(headers, false), promise);
+        });
+        return writeQueue.enqueueFuture(cmd, parent.eventLoop()).addListener(future -> {
             if (!future.isSuccess()) {
                 transportException(future.cause());
             }
