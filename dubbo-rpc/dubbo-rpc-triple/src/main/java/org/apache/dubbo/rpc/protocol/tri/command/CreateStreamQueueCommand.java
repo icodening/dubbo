@@ -19,6 +19,8 @@ package org.apache.dubbo.rpc.protocol.tri.command;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
+import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import io.netty.handler.codec.http2.Http2StreamChannelBootstrap;
 import io.netty.util.concurrent.Future;
@@ -28,19 +30,23 @@ public class CreateStreamQueueCommand extends QueuedCommand {
 
     private final Http2StreamChannelBootstrap bootstrap;
 
+    private final Http2HeadersFrame http2HeadersFrame;
+
     private final TripleStreamChannelFuture streamChannelFuture;
 
     private CreateStreamQueueCommand(Http2StreamChannelBootstrap bootstrap,
+                                     Http2HeadersFrame http2HeadersFrame,
                                      TripleStreamChannelFuture streamChannelFuture) {
         this.bootstrap = bootstrap;
+        this.http2HeadersFrame = http2HeadersFrame;
         this.streamChannelFuture = streamChannelFuture;
         this.promise(streamChannelFuture.getParentChannel().newPromise());
         this.channel(streamChannelFuture.getParentChannel());
     }
 
     public static CreateStreamQueueCommand create(Http2StreamChannelBootstrap bootstrap,
-                                                  TripleStreamChannelFuture streamChannelFuture) {
-        return new CreateStreamQueueCommand(bootstrap, streamChannelFuture);
+                                                  Http2HeadersFrame http2HeadersFrame, TripleStreamChannelFuture streamChannelFuture) {
+        return new CreateStreamQueueCommand(bootstrap, http2HeadersFrame,streamChannelFuture);
     }
 
     @Override
@@ -53,7 +59,9 @@ public class CreateStreamQueueCommand extends QueuedCommand {
         //work in I/O thread
         Future<Http2StreamChannel> future = bootstrap.open();
         if (future.isSuccess()) {
-            streamChannelFuture.complete(future.getNow());
+            Http2StreamChannel streamChannel = future.getNow();
+            streamChannel.write(http2HeadersFrame);
+            streamChannelFuture.complete(streamChannel);
         } else {
             streamChannelFuture.completeExceptionally(future.cause());
         }

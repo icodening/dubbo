@@ -130,13 +130,7 @@ public class TripleClientStream extends AbstractStream implements ClientStream {
                 channel.closeFuture().addListener(f -> transportException(f.cause()));
             }
         });
-        CreateStreamQueueCommand cmd = CreateStreamQueueCommand.create(bootstrap, streamChannelFuture);
-        streamChannelFuture.whenComplete((h2StreamChannel, throwable) ->{
-            if (throwable != null) {
-                return;
-            }
-            h2StreamChannel.write(new DefaultHttp2HeadersFrame(headers, false));
-        });
+        CreateStreamQueueCommand cmd = CreateStreamQueueCommand.create(bootstrap, new DefaultHttp2HeadersFrame(headers, false), streamChannelFuture);
         return writeQueue.enqueueFuture(cmd, parent.eventLoop()).addListener(future -> {
             if (!future.isSuccess()) {
                 transportException(future.cause());
