@@ -27,6 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -38,6 +40,14 @@ import java.util.concurrent.locks.LockSupport;
  * is exactly the same as the one calling waitAndDrain.
  */
 public class ThreadlessExecutor extends AbstractExecutorService {
+
+    private static final LongAdder LONG_ADDER = new LongAdder();
+
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("刚调用waitAndDrain还未进入阻塞就拿到了响应结果的次数：" + LONG_ADDER.longValue());
+        }));
+    }
     private static final Logger logger = LoggerFactory.getLogger(ThreadlessExecutor.class.getName());
 
     private static final Object SHUTDOWN = new Object();
@@ -79,6 +89,8 @@ public class ThreadlessExecutor extends AbstractExecutorService {
             } finally {
                 waiter = null;
             }
+        } else {
+            LONG_ADDER.increment();
         }
         do {
             runnable.run();
