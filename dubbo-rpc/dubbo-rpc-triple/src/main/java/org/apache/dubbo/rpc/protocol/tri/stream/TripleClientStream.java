@@ -125,6 +125,7 @@ public class TripleClientStream extends AbstractStream implements ClientStream {
             @Override
             public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
                 Channel channel = ctx.channel();
+                channel.pipeline().addLast(new TripleCommandOutBoundHandler());
                 channel.pipeline().addLast(new TripleHttp2ClientResponseHandler(createTransportListener()));
                 channel.closeFuture().addListener(f -> transportException(f.cause()));
             }
