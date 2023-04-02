@@ -26,6 +26,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * The most important difference between this Executor and other normal Executor is that this one doesn't manage
@@ -47,6 +48,8 @@ public class ThreadlessExecutor extends AbstractExecutorService {
     private volatile boolean waiting = true;
 
     private final Object lock = new Object();
+
+    private volatile Thread waiter;
 
     public CompletableFuture<?> getWaitingFuture() {
         return waitingFuture;
@@ -89,13 +92,17 @@ public class ThreadlessExecutor extends AbstractExecutorService {
         if (isFinished()) {
             return;
         }
-
-        Runnable runnable;
-        try {
-            runnable = queue.take();
-        } catch (InterruptedException e) {
-            setWaiting(false);
-            throw e;
+        Runnable runnable = queue.poll();
+        if (runnable == null) {
+            waiter = Thread.currentThread();
+            try {
+                while ((runnable = queue.poll()) == null) {
+                    LockSupport.park(this);
+                    throwIfInterrupted();
+                }
+            } finally {
+                waiter = null;
+            }
         }
 
         synchronized (lock) {
@@ -110,6 +117,13 @@ public class ThreadlessExecutor extends AbstractExecutorService {
         }
         // mark the status of ThreadlessExecutor as finished.
         setFinished(true);
+    }
+
+    private void throwIfInterrupted() throws InterruptedException {
+        if (Thread.interrupted()) {
+            setWaiting(false);
+            throw new InterruptedException();
+        }
     }
 
     /**
@@ -127,6 +141,7 @@ public class ThreadlessExecutor extends AbstractExecutorService {
                 return;
             }
             queue.add(runnable);
+            LockSupport.unpark(waiter);
         }
     }
 

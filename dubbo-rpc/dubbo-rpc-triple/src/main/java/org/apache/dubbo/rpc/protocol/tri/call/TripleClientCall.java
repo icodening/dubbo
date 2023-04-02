@@ -35,8 +35,10 @@ import org.apache.dubbo.rpc.protocol.tri.transport.TripleWriteQueue;
 
 import io.netty.channel.Channel;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 import static org.apache.dubbo.common.constants.LoggerCodeConstants.PROTOCOL_FAILED_RESPONSE;
 import static org.apache.dubbo.common.constants.LoggerCodeConstants.PROTOCOL_FAILED_SERIALIZE_TRIPLE;
@@ -77,8 +79,15 @@ public class TripleClientCall implements ClientCall, ClientStream.Listener {
             return;
         }
         try {
-            final Object unpacked = requestMetadata.packableMethod.parseResponse(message);
-            listener.onMessage(unpacked);
+            Supplier<Object> supplier = () ->{
+                try {
+                    return requestMetadata.packableMethod.parseResponse(message);
+                } catch (Throwable t) {
+                    onDeserializeError(t);
+                    throw new RuntimeException(t);
+                }
+            };
+            listener.onMessage(supplier);
         } catch (Throwable t) {
             TriRpcStatus status = TriRpcStatus.INTERNAL.withDescription("Deserialize response failed")
                 .withCause(t);
@@ -87,6 +96,15 @@ public class TripleClientCall implements ClientCall, ClientStream.Listener {
             LOGGER.error(PROTOCOL_FAILED_RESPONSE, "", "", String.format("Failed to deserialize triple response, service=%s, method=%s,connection=%s",
                     connectionClient, requestMetadata.service, requestMetadata.method.getMethodName()), t);
         }
+    }
+
+    private void onDeserializeError(Throwable t){
+        TriRpcStatus status = TriRpcStatus.INTERNAL.withDescription("Deserialize response failed")
+            .withCause(t);
+        cancelByLocal(status.asException());
+        listener.onClose(status,null);
+        LOGGER.error(PROTOCOL_FAILED_RESPONSE, "", "", String.format("Failed to deserialize triple response, service=%s, method=%s,connection=%s",
+            connectionClient, requestMetadata.service, requestMetadata.method.getMethodName()), t);
     }
 
     @Override

@@ -22,6 +22,7 @@ import org.apache.dubbo.rpc.TriRpcStatus;
 import org.apache.dubbo.rpc.protocol.tri.DeadlineFuture;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 public class UnaryClientCallListener implements ClientCall.Listener {
 
@@ -39,18 +40,24 @@ public class UnaryClientCallListener implements ClientCall.Listener {
 
     @Override
     public void onClose(TriRpcStatus status, Map<String, Object> trailers) {
-        AppResponse result = new AppResponse();
-        result.setObjectAttachments(trailers);
-        if (status.isOk()) {
-            if (appResponse instanceof Exception) {
-                result.setException((Exception) appResponse);
+        future.received(status, ()->{
+            AppResponse result = new AppResponse();
+            result.setObjectAttachments(trailers);
+            if (status.isOk()) {
+                Object ret = appResponse;
+                if (appResponse instanceof Supplier) {
+                    ret = ((Supplier<?>) appResponse).get();
+                }
+                if (ret instanceof Exception) {
+                    result.setException((Exception) ret);
+                } else {
+                    result.setValue(ret);
+                }
             } else {
-                result.setValue(appResponse);
+                result.setException(status.asException());
             }
-         } else {
-            result.setException(status.asException());
-        }
-        future.received(status, result);
+            return result;
+        });
     }
 
     @Override
