@@ -14,27 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.h1;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.remoting.http12.HttpInputMessage;
+import org.apache.dubbo.remoting.http12.RequestMetadata;
 
-import java.util.concurrent.CompletableFuture;
+public interface Http1Request extends RequestMetadata, HttpInputMessage {
 
-public interface GreeterService {
-
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
-
-
-    CompletableFuture<String> sayHelloAsync(String request);
-
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
 }

@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.exception;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+public class HttpStatusException extends RuntimeException {
 
-import java.util.concurrent.CompletableFuture;
+    private final int statusCode;
 
-public interface GreeterService {
+    public HttpStatusException(int statusCode) {
+        this(statusCode, "Unknown Error");
+    }
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    public HttpStatusException(int statusCode, String message) {
+        super(message);
+        this.statusCode = statusCode;
+    }
 
+    public HttpStatusException(int statusCode, Throwable cause) {
+        super(cause);
+        this.statusCode = statusCode;
+    }
 
-    CompletableFuture<String> sayHelloAsync(String request);
-
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    public int getStatusCode() {
+        return statusCode;
+    }
 }

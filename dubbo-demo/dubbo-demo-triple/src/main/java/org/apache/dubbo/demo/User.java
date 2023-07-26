@@ -16,25 +16,33 @@
  */
 package org.apache.dubbo.demo;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+public class User {
 
-import java.util.concurrent.CompletableFuture;
+    private String name;
 
-public interface GreeterService {
+    private int age;
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    public String getName() {
+        return name;
+    }
 
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    CompletableFuture<String> sayHelloAsync(String request);
+    public int getAge() {
+        return age;
+    }
 
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
+    public void setAge(int age) {
+        this.age = age;
+    }
 
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    @Override
+    public String toString() {
+        return "User{" +
+            "name='" + name + '\'' +
+            ", age=" + age +
+            '}';
+    }
 }

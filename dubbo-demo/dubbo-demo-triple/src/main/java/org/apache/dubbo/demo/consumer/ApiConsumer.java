@@ -17,18 +17,15 @@
 package org.apache.dubbo.demo.consumer;
 
 import org.apache.dubbo.common.constants.CommonConstants;
+import org.apache.dubbo.common.stream.StreamObserver;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
 import org.apache.dubbo.demo.GreeterService;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 public class ApiConsumer {
     public static void main(String[] args) throws InterruptedException, IOException {
@@ -49,14 +46,40 @@ public class ApiConsumer {
         GreeterService greeterService = referenceConfig.get();
         System.out.println("dubbo referenceConfig started");
         try {
-            final HelloReply reply = greeterService.sayHello(HelloRequest.newBuilder()
-                .setName("triple")
-                .build());
-            TimeUnit.SECONDS.sleep(1);
-            System.out.println("Reply: " + reply.getMessage());
+            StreamObserver<String> request = greeterService.biStream(new StreamObserver<String>() {
+                @Override
+                public void onNext(String data) {
+                    System.out.println(data);
+                }
 
-            CompletableFuture<String> sayHelloAsync = greeterService.sayHelloAsync("triple");
-            System.out.println("Async Reply: "+sayHelloAsync.get());
+                @Override
+                public void onError(Throwable throwable) {
+                    throwable.printStackTrace();
+                }
+
+                @Override
+                public void onCompleted() {
+
+                }
+            });
+            for (int i = 0; i < 5; i++) {
+                request.onNext("hello " + i);
+            }
+            Thread.sleep(1000);
+            for (int i = 0; i < 5; i++) {
+                request.onNext("world " + i);
+            }
+            request.onCompleted();
+//            for (int i = 0; i < 10; i++) {
+//                final HelloReply reply = greeterService.sayHello(HelloRequest.newBuilder()
+//                    .setName("triple")
+//                    .build());
+//                System.out.println((i+1) + " Reply: " + reply.getMessage());
+//            }
+
+//
+//            CompletableFuture<String> sayHelloAsync = greeterService.sayHelloAsync("triple");
+//            System.out.println("Async Reply: "+sayHelloAsync.get());
         } catch (Throwable t) {
             t.printStackTrace();
         }

@@ -14,27 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.command;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.remoting.http12.HttpChannel;
+import org.apache.dubbo.remoting.http12.HttpChannelHolder;
 
 import java.util.concurrent.CompletableFuture;
 
-public interface GreeterService {
+public abstract class HttpChannelQueueCommand extends CompletableFuture<Void> implements QueueCommand, HttpChannelHolder {
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    private HttpChannelHolder httpChannelHolder;
 
+    public void setHttpChannel(HttpChannelHolder httpChannelHolder) {
+        this.httpChannelHolder = httpChannelHolder;
+    }
 
-    CompletableFuture<String> sayHelloAsync(String request);
+    public HttpChannel getHttpChannel() {
+        return httpChannelHolder.getHttpChannel();
+    }
 
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
 }

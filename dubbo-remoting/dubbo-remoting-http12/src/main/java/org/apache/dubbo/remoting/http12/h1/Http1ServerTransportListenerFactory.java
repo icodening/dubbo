@@ -14,27 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.h1;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.extension.ExtensionScope;
+import org.apache.dubbo.common.extension.SPI;
+import org.apache.dubbo.remoting.http12.HttpChannel;
+import org.apache.dubbo.rpc.model.FrameworkModel;
 
-import java.util.concurrent.CompletableFuture;
+@SPI(scope = ExtensionScope.FRAMEWORK)
+public interface Http1ServerTransportListenerFactory {
 
-public interface GreeterService {
+    Http1ServerTransportListener newInstance(HttpChannel httpChannel, URL url, FrameworkModel frameworkModel);
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
-
-
-    CompletableFuture<String> sayHelloAsync(String request);
-
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
 }

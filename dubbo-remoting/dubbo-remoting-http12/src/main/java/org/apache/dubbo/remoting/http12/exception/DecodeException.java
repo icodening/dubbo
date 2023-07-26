@@ -14,27 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.exception;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+public class DecodeException extends HttpStatusException {
 
-import java.util.concurrent.CompletableFuture;
+    public DecodeException() {
+        super(500);
+    }
 
-public interface GreeterService {
+    public DecodeException(String message) {
+        super(500, message);
+    }
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
-
-
-    CompletableFuture<String> sayHelloAsync(String request);
-
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    public DecodeException(Throwable cause) {
+        super(500, cause);
+    }
 }

@@ -14,27 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.h1;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.remoting.http12.HttpHeaders;
+import org.apache.dubbo.remoting.http12.HttpInputMessage;
+import org.apache.dubbo.remoting.http12.HttpMetadata;
 
-import java.util.concurrent.CompletableFuture;
+import java.io.InputStream;
 
-public interface GreeterService {
+public class DefaultHttp1Response implements HttpMetadata, HttpInputMessage {
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    private final HttpMetadata httpMetadata;
 
+    private final HttpInputMessage httpInputMessage;
 
-    CompletableFuture<String> sayHelloAsync(String request);
+    public DefaultHttp1Response(HttpMetadata httpMetadata, HttpInputMessage httpInputMessage) {
+        this.httpMetadata = httpMetadata;
+        this.httpInputMessage = httpInputMessage;
+    }
 
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
+    @Override
+    public InputStream getBody() {
+        return httpInputMessage.getBody();
+    }
 
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    @Override
+    public HttpHeaders headers() {
+        return httpMetadata.headers();
+    }
 }

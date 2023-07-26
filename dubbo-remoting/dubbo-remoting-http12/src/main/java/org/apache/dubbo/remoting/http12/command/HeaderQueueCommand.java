@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.command;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.remoting.http12.HttpMetadata;
 
-import java.util.concurrent.CompletableFuture;
+public class HeaderQueueCommand extends HttpChannelQueueCommand {
 
-public interface GreeterService {
+    private final HttpMetadata httpMetadata;
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    public HeaderQueueCommand(HttpMetadata httpMetadata) {
+        this.httpMetadata = httpMetadata;
+    }
 
-
-    CompletableFuture<String> sayHelloAsync(String request);
-
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    @Override
+    public void run() {
+        getHttpChannel().writeHeader(httpMetadata)
+            .whenComplete((unused, throwable) -> {
+            if (throwable != null) {
+                completeExceptionally(throwable);
+            } else {
+                complete(unused);
+            }
+        });
+    }
 }

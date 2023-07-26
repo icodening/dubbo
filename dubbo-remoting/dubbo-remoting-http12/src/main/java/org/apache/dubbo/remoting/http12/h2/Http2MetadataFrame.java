@@ -14,27 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12.h2;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.remoting.http12.HttpHeaders;
 
-import java.util.concurrent.CompletableFuture;
+public class Http2MetadataFrame implements Http2Header {
 
-public interface GreeterService {
+    private final HttpHeaders headers;
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    private final boolean endStream;
 
+    public Http2MetadataFrame(HttpHeaders headers) {
+        this(headers, false);
+    }
 
-    CompletableFuture<String> sayHelloAsync(String request);
+    public Http2MetadataFrame(HttpHeaders headers, boolean endStream) {
+        this.headers = headers;
+        this.endStream = endStream;
+    }
 
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
+    @Override
+    public HttpHeaders headers() {
+        return headers;
+    }
 
-    void serverStream(String request, StreamObserver<String> responseObserver);
+    @Override
+    public String name() {
+        return "HEADER";
+    }
 
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    @Override
+    public int id() {
+        return 0;
+    }
+
+    @Override
+    public boolean isEndStream() {
+        return endStream;
+    }
 }

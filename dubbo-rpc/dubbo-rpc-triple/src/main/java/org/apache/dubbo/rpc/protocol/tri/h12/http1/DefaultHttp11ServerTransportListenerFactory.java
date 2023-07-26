@@ -14,27 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.rpc.protocol.tri.h12.http1;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.remoting.http12.HttpChannel;
+import org.apache.dubbo.remoting.http12.h1.Http1ServerTransportListener;
+import org.apache.dubbo.remoting.http12.h1.Http1ServerTransportListenerFactory;
+import org.apache.dubbo.rpc.model.FrameworkModel;
 
-import java.util.concurrent.CompletableFuture;
+public class DefaultHttp11ServerTransportListenerFactory implements Http1ServerTransportListenerFactory {
 
-public interface GreeterService {
+    public static final Http1ServerTransportListenerFactory INSTANCE = new DefaultHttp11ServerTransportListenerFactory();
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
-
-
-    CompletableFuture<String> sayHelloAsync(String request);
-
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    @Override
+    public Http1ServerTransportListener newInstance(HttpChannel httpChannel, URL url, FrameworkModel frameworkModel) {
+        return new DefaultHttp11ServerTransportListener(httpChannel, url, frameworkModel);
+    }
 }

@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+public enum HttpHeaderNames {
 
-import java.util.concurrent.CompletableFuture;
+    STATUS(":status"),
 
-public interface GreeterService {
+    CONTENT_TYPE("content-type"),
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    CONTENT_LENGTH("content-length"),
 
+    TRANSFER_ENCODING("transfer-encoding"),
 
-    CompletableFuture<String> sayHelloAsync(String request);
+    TE("te");
 
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
+    private final String name;
 
-    void serverStream(String request, StreamObserver<String> responseObserver);
+    HttpHeaderNames(String name) {
+        this.name = name;
+    }
 
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    public String getName() {
+        return name;
+    }
 }
