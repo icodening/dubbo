@@ -42,8 +42,6 @@ public class CompatibleLowVersionCodec implements HttpMessageCodec {
 
     private static final MediaType MEDIA_TYPE = new MediaType("application", "grpc+proto");
 
-    public static HttpMessageCodec INSTANCE = new CompatibleLowVersionCodec();
-
     private final ProtobufHttpMessageCodec protobufHttpMessageCodec = new ProtobufHttpMessageCodec();
 
     private final WrapperHttpMessageCodec wrapperHttpMessageCodec = new WrapperHttpMessageCodec();

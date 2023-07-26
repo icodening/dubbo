@@ -102,6 +102,7 @@ public class Http1ChannelObserver implements HttpChannelObserver {
         try {
             HttpOutputMessage httpOutputMessage = this.httpChannel.newOutputMessage();
             this.httpMessageCodec.encode(httpOutputMessage.getBody(), throwable.getMessage());
+            this.getHttpChannel().writeMessage(httpOutputMessage);
         } finally {
             onCompleted();
         }

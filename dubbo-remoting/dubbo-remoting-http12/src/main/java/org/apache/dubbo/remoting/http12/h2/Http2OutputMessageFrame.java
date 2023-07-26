@@ -49,7 +49,7 @@ public class Http2OutputMessageFrame implements Http2OutputMessage {
 
     @Override
     public int id() {
-        return 0;
+        return -1;
     }
 
     @Override

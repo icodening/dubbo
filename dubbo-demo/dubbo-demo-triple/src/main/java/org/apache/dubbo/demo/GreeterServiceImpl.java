@@ -51,7 +51,6 @@ public class GreeterServiceImpl implements GreeterService {
 
             }
             responseObserver.onNext(request);
-            throw new RuntimeException("hello world");
         }
         responseObserver.onCompleted();
     }

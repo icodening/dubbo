@@ -21,7 +21,7 @@ public class UnimplementedException extends HttpStatusException {
     private final String unimplemented;
 
     public UnimplementedException(String unimplemented) {
-        super(500, unimplemented);
+        super(500, "unimplemented " + unimplemented);
         this.unimplemented = unimplemented;
     }
 

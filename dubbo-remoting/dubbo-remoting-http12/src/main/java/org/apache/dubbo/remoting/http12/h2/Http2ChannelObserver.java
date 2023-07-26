@@ -97,6 +97,7 @@ public class Http2ChannelObserver implements HttpChannelObserver {
         try {
             HttpOutputMessage httpOutputMessage = this.h2StreamChannel.newOutputMessage();
             this.httpMessageCodec.encode(httpOutputMessage.getBody(), throwable.getMessage());
+            getHttpChannel().writeMessage(httpOutputMessage);
         } finally {
             onCompleted();
         }

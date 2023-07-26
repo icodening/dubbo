@@ -121,20 +121,6 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
         }
     }
 
-//    protected void doOnData(Http2InputMessage message) {
-//        try {
-//            InputStream body = message.getBody();
-//            if (body.available() != 0) {
-//                super.onData(message);
-//            }
-//            if (message.isEndStream()) {
-//                serverCallListener.onComplete();
-//            }
-//        } catch (Throwable e) {
-//            this.responseObserver.onError(e);
-//        }
-//    }
-
     protected void doOnData(Http2InputMessage message) {
         try {
             InputStream body = message.getBody();
