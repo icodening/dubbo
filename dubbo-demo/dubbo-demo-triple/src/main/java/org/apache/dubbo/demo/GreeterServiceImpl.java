@@ -65,7 +65,7 @@ public class GreeterServiceImpl implements GreeterService {
         return new StreamObserver<String>() {
             @Override
             public void onNext(String data) {
-                responseObserver.onNext("响应:" + data);
+                responseObserver.onNext("GreeterService bi streaming 响应:" + data);
             }
 
             @Override

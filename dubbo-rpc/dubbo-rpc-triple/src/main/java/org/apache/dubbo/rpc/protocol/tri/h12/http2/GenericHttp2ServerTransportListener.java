@@ -24,24 +24,30 @@ import org.apache.dubbo.remoting.http12.ServerStreamServerCallListener;
 import org.apache.dubbo.remoting.http12.UnaryServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.BiStreamServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
-import org.apache.dubbo.remoting.http12.h2.Http2ChannelObserver;
 import org.apache.dubbo.remoting.http12.h2.Http2Header;
 import org.apache.dubbo.remoting.http12.h2.Http2InputMessage;
+import org.apache.dubbo.remoting.http12.h2.Http2LengthFieldStreamingDecoder;
+import org.apache.dubbo.remoting.http12.h2.Http2ServerChannelObserver;
 import org.apache.dubbo.remoting.http12.h2.Http2TransportListener;
+import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
 import org.apache.dubbo.remoting.http12.message.JsonCodec;
+import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
+import org.apache.dubbo.rpc.CancellationContext;
 import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.RpcContext;
 import org.apache.dubbo.rpc.RpcInvocation;
 import org.apache.dubbo.rpc.executor.ExecutorSupport;
 import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.model.MethodDescriptor;
 import org.apache.dubbo.rpc.protocol.tri.h12.AbstractServerTransportListener;
 
-import java.io.InputStream;
 import java.util.concurrent.Executor;
 
 public class GenericHttp2ServerTransportListener extends AbstractServerTransportListener<Http2Header, Http2InputMessage> implements Http2TransportListener {
 
-    protected final Http2ChannelObserver responseObserver;
+    protected ServerCallListener serverCallListener;
+
+    protected final Http2ServerChannelObserver responseObserver;
 
     protected final H2StreamChannel h2StreamChannel;
 
@@ -52,7 +58,7 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
     public GenericHttp2ServerTransportListener(H2StreamChannel h2StreamChannel, URL url, FrameworkModel frameworkModel) {
         super(frameworkModel);
         this.h2StreamChannel = h2StreamChannel;
-        this.responseObserver = new Http2ChannelObserver(h2StreamChannel);
+        this.responseObserver = new Http2ServerChannelObserver(h2StreamChannel);
         this.responseObserver.setHttpMessageCodec(JsonCodec.INSTANCE);
         this.executorSupport = ExecutorRepository.getInstance(url.getOrDefaultApplicationModel()).getExecutorSupport(url);
     }
@@ -63,49 +69,57 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
     }
 
     @Override
-    public void onMetadata(Http2Header metadata) {
+    protected Executor initializationExecutor(Http2Header metadata) {
         if (serializingExecutor == null) {
             Executor executor = executorSupport.getExecutor(metadata);
             this.serializingExecutor = new SerializingExecutor(executor);
         }
-        this.serializingExecutor.execute(() -> doOnMetadata(metadata));
+        return this.serializingExecutor;
     }
 
-    @Override
-    public void onData(Http2InputMessage message) {
-        this.serializingExecutor.execute(() -> doOnData(message));
-    }
-
-    @Override
     protected ServerCallListener startListener(RpcInvocation invocation,
                                                MethodDescriptor methodDescriptor,
                                                Invoker<?> invoker) {
-        Http2ChannelObserver responseObserver = getResponseObserver();
+        Http2ServerChannelObserver responseObserver = getResponseObserver();
         configurerResponseObserver(responseObserver);
+        CancellationContext cancellationContext = RpcContext.getCancellationContext();
+        responseObserver.setCancellationContext(cancellationContext);
         switch (methodDescriptor.getRpcType()) {
             case UNARY:
-                return startUnary(invocation, invoker, responseObserver);
+                this.serverCallListener = startUnary(invocation, invoker, responseObserver);
+                return this.serverCallListener;
             case SERVER_STREAM:
-                return startServerStreaming(invocation, invoker, responseObserver);
+                this.serverCallListener = startServerStreaming(invocation, invoker, responseObserver);
+                return this.serverCallListener;
             case BI_STREAM:
             case CLIENT_STREAM:
-                return startBiStreaming(invocation, invoker, responseObserver);
+                this.serverCallListener = startBiStreaming(invocation, invoker, responseObserver);
+                return this.serverCallListener;
             default:
                 throw new IllegalStateException("Can not reach here");
         }
     }
 
-    protected void configurerResponseObserver(Http2ChannelObserver responseObserver) {
+    protected void configurerResponseObserver(Http2ServerChannelObserver responseObserver) {
 
     }
 
-    public Http2ChannelObserver getResponseObserver() {
+    public Http2ServerChannelObserver getResponseObserver() {
         return responseObserver;
     }
 
     @Override
     public void cancelByRemote(long errorCode) {
-        this.getServerCallListener().onCancel((int) errorCode);
+        this.serverCallListener.onCancel(errorCode);
+    }
+
+    @Override
+    protected ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes) {
+        Http2LengthFieldStreamingDecoder listeningDecoder = new Http2LengthFieldStreamingDecoder(actualRequestTypes);
+        listeningDecoder.setHttpMessageCodec(codec);
+        ServerCallListener serverCallListener = startListener(getRpcInvocation(), getMethodDescriptor(), getRpcInvocation().getInvoker());
+        listeningDecoder.setListener(serverCallListener::onMessage);
+        return listeningDecoder;
     }
 
     protected void doOnMetadata(Http2Header metadata) {
@@ -113,23 +127,9 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
             if (metadata.isEndStream()) {
                 return;
             }
-            super.onMetadata(metadata);
-            Http2ChannelObserver responseObserver = this.responseObserver;
+            super.doOnMetadata(metadata);
+            Http2ServerChannelObserver responseObserver = this.responseObserver;
             responseObserver.setHttpMessageCodec(getHttpMessageCodec());
-        } catch (Throwable e) {
-            this.responseObserver.onError(e);
-        }
-    }
-
-    protected void doOnData(Http2InputMessage message) {
-        try {
-            InputStream body = message.getBody();
-            while (body.available() != 0) {
-                super.onData(message);
-            }
-            if (message.isEndStream()) {
-                getServerCallListener().onComplete();
-            }
         } catch (Throwable e) {
             this.responseObserver.onError(e);
         }
@@ -137,15 +137,15 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
 
     protected UnaryServerCallListener startUnary(RpcInvocation invocation,
                                                  Invoker<?> invoker,
-                                                 Http2ChannelObserver responseObserver) {
+                                                 Http2ServerChannelObserver responseObserver) {
         return new UnaryServerCallListener(invocation, invoker, responseObserver);
     }
 
-    protected ServerCallListener startServerStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
+    protected ServerStreamServerCallListener startServerStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ServerChannelObserver responseObserver) {
         return new ServerStreamServerCallListener(invocation, invoker, responseObserver);
     }
 
-    protected BiStreamServerCallListener startBiStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
+    protected BiStreamServerCallListener startBiStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ServerChannelObserver responseObserver) {
         return new BiStreamServerCallListener(invocation, invoker, responseObserver);
     }
 }

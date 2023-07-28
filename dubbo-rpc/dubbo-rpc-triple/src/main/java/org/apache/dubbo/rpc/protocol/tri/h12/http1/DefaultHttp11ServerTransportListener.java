@@ -27,6 +27,9 @@ import org.apache.dubbo.remoting.http12.UnaryServerCallListener;
 import org.apache.dubbo.remoting.http12.h1.Http1ChannelObserver;
 import org.apache.dubbo.remoting.http12.h1.Http1ServerStreamChannelObserver;
 import org.apache.dubbo.remoting.http12.h1.Http1ServerTransportListener;
+import org.apache.dubbo.remoting.http12.message.DefaultListeningDecoder;
+import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
+import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcInvocation;
 import org.apache.dubbo.rpc.model.FrameworkModel;
@@ -45,10 +48,9 @@ public class DefaultHttp11ServerTransportListener extends AbstractServerTranspor
         this.httpChannel = httpChannel;
     }
 
-    @Override
-    protected ServerCallListener startListener(RpcInvocation invocation,
-                                               MethodDescriptor methodDescriptor,
-                                               Invoker<?> invoker) {
+    private ServerCallListener startListener(RpcInvocation invocation,
+                                             MethodDescriptor methodDescriptor,
+                                             Invoker<?> invoker) {
         switch (methodDescriptor.getRpcType()) {
             case UNARY:
                 Http1ChannelObserver http1ChannelObserver = new Http1ChannelObserver(httpChannel, getHttpMessageCodec());
@@ -64,6 +66,14 @@ public class DefaultHttp11ServerTransportListener extends AbstractServerTranspor
     @Override
     public HttpChannel getHttpChannel() {
         return this.httpChannel;
+    }
+
+    @Override
+    protected ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes) {
+        DefaultListeningDecoder defaultListeningDecoder = new DefaultListeningDecoder(codec, actualRequestTypes);
+        ServerCallListener serverCallListener = startListener(getRpcInvocation(), getMethodDescriptor(), getInvoker());
+        defaultListeningDecoder.setListener(serverCallListener::onMessage);
+        return defaultListeningDecoder;
     }
 
     private static class AutoCompleteUnaryServerCallListener extends UnaryServerCallListener {

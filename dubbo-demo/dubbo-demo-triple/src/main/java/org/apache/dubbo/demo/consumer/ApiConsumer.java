@@ -64,41 +64,6 @@ public class ApiConsumer {
         try {
             doGrpcStub(grpcGreeter);
             doWrapper(greeterService);
-
-//            StreamObserver<String> request = greeterService.biStream(new StreamObserver<String>() {
-//                @Override
-//                public void onNext(String data) {
-//                    System.out.println(data);
-//                }
-//
-//                @Override
-//                public void onError(Throwable throwable) {
-//                    throwable.printStackTrace();
-//                }
-//
-//                @Override
-//                public void onCompleted() {
-//
-//                }
-//            });
-//            for (int i = 0; i < 5; i++) {
-//                request.onNext("hello " + i);
-//            }
-//            Thread.sleep(1000);
-//            for (int i = 0; i < 5; i++) {
-//                request.onNext("world " + i);
-//            }
-//            request.onCompleted();
-//            for (int i = 0; i < 10; i++) {
-//                final HelloReply reply = greeterService.sayHello(HelloRequest.newBuilder()
-//                    .setName("triple")
-//                    .build());
-//                System.out.println((i+1) + " Reply: " + reply.getMessage());
-//            }
-
-//
-//            CompletableFuture<String> sayHelloAsync = greeterService.sayHelloAsync("triple");
-//            System.out.println("Async Reply: "+sayHelloAsync.get());
         } catch (Throwable t) {
             t.printStackTrace();
         }
@@ -125,9 +90,28 @@ public class ApiConsumer {
                 System.out.println("greeterService server-stream complete.");
             }
         });
+
+        StreamObserver<String> requestObserver = greeterService.biStream(new StreamObserver<String>() {
+            @Override
+            public void onNext(String data) {
+                System.out.println(data);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("greeterService bi-stream complete.");
+            }
+        });
+        requestObserver.onNext("greeterService bi-stream");
+        requestObserver.onCompleted();
     }
 
-    private static void doGrpcStub(GrpcGreeter grpcGreeter){
+    private static void doGrpcStub(GrpcGreeter grpcGreeter) {
         HelloReply reply = grpcGreeter.exchange(HelloRequest.newBuilder().setName("hello world grpc").build());
         System.out.println(reply.getMessage());
 

@@ -19,82 +19,81 @@ package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
 import org.apache.dubbo.remoting.http12.ServerCallListener;
-import org.apache.dubbo.remoting.http12.UnaryServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.BiStreamServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
-import org.apache.dubbo.remoting.http12.h2.Http2ChannelObserver;
+import org.apache.dubbo.remoting.http12.h2.Http2Header;
 import org.apache.dubbo.remoting.http12.h2.Http2InputMessage;
+import org.apache.dubbo.remoting.http12.h2.Http2ServerChannelObserver;
 import org.apache.dubbo.remoting.http12.h2.Http2TransportListener;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
 import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcInvocation;
 import org.apache.dubbo.rpc.model.FrameworkModel;
+import org.apache.dubbo.rpc.model.MethodDescriptor;
 import org.apache.dubbo.rpc.protocol.tri.h12.http2.GenericHttp2ServerTransportListener;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.function.Supplier;
 
 public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTransportListener implements Http2TransportListener {
+
+    private GrpcStreamingDecoder grpcStreamingDecoder;
 
     public GrpcHttp2ServerTransportListener(H2StreamChannel h2StreamChannel, URL url, FrameworkModel frameworkModel) {
         super(h2StreamChannel, url, frameworkModel);
     }
 
     @Override
-    protected void configurerResponseObserver(Http2ChannelObserver responseObserver) {
-        responseObserver.setOnWriteTrailers(this::addGrpcTrailers);
+    protected void configurerResponseObserver(Http2ServerChannelObserver responseObserver) {
+        responseObserver.setTrailersCustomizer(this::grpcTrailersCustomize);
     }
 
-    private void addGrpcTrailers(HttpHeaders httpHeaders) {
-        httpHeaders.set("grpc-status", "0");
-    }
-
-    @Override
-    protected UnaryServerCallListener startUnary(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
-        this.getListeningDecoder().request(2);
-        return super.startUnary(invocation, invoker, responseObserver);
+    private void grpcTrailersCustomize(HttpHeaders httpHeaders, Throwable throwable) {
+        httpHeaders.set(GrpcHeaderNames.GRPC_STATUS.getName(), "0");
+        if (throwable != null) {
+            httpHeaders.set(GrpcHeaderNames.GRPC_MESSAGE.getName(), throwable.getMessage());
+        }
     }
 
     @Override
-    protected ServerCallListener startServerStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
-        this.getListeningDecoder().request(2);
-        return super.startServerStreaming(invocation, invoker, responseObserver);
-    }
-
-    @Override
-    protected BiStreamServerCallListener startBiStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
-        this.getListeningDecoder().request(1);
+    protected BiStreamServerCallListener startBiStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ServerChannelObserver responseObserver) {
         GrpcBiStreamServerCallListener grpcBiStreamServerCallListener = new GrpcBiStreamServerCallListener(invocation, invoker, responseObserver);
-        grpcBiStreamServerCallListener.setGrpcListeningDecoder(getListeningDecoder());
+        grpcBiStreamServerCallListener.setGrpcListeningDecoder(grpcStreamingDecoder);
         return grpcBiStreamServerCallListener;
     }
 
     @Override
     protected ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes) {
-        GrpcStreamingDecoder grpcStreamingDecoder = new GrpcStreamingDecoder(actualRequestTypes);
-        grpcStreamingDecoder.setListener(new GrpcServerDecodeListener(this::getServerCallListener));
+        this.grpcStreamingDecoder = new GrpcStreamingDecoder(actualRequestTypes);
+        grpcStreamingDecoder.setHttpMessageCodec(codec);
+        ServerCallListener serverCallListener = startListener(getRpcInvocation(), getMethodDescriptor(), getInvoker());
+        grpcStreamingDecoder.setListener(new GrpcServerDecodeListener(() -> serverCallListener));
         return grpcStreamingDecoder;
     }
 
     @Override
-    protected void doOnData(Http2InputMessage message) {
-        try {
-            doGrpcDecode(message);
-        } catch (Throwable e) {
-            this.responseObserver.onError(e);
+    protected void onMetadataCompletion(Http2Header metadata) {
+        super.onMetadataCompletion(metadata);
+        MethodDescriptor.RpcType rpcType = getMethodDescriptor().getRpcType();
+        switch (rpcType) {
+            case UNARY:
+            case SERVER_STREAM:
+                this.grpcStreamingDecoder.request(2);
+                break;
+            case BI_STREAM:
+            case CLIENT_STREAM:
+                this.grpcStreamingDecoder.request(1);
+                break;
+            default:
+                throw new IllegalStateException("Can not reach here");
         }
     }
 
-    private void doGrpcDecode(Http2InputMessage message) throws IOException {
-        InputStream body = message.getBody();
-        GrpcStreamingDecoder listeningDecoder = this.getListeningDecoder();
-        if (body.available() != 0) {
-            listeningDecoder.decode(body);
-        }
+    @Override
+    protected void doOnData(Http2InputMessage message) {
+        super.doOnData(message);
         if (message.isEndStream()) {
-            listeningDecoder.close();
+            serverCallListener.onComplete();
         }
     }
 
