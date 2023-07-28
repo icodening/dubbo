@@ -48,7 +48,7 @@ public class DefaultListeningDecoder implements ListeningDecoder {
     }
 
     @Override
-    public HttpMessageCodec getCodec() {
+    public HttpMessageCodec getHttpMessageCodec() {
         return httpMessageCodec;
     }
 }
