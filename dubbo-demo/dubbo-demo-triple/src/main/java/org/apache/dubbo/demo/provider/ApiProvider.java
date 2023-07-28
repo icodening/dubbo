@@ -29,6 +29,7 @@ import org.apache.dubbo.demo.hello.GrpcGreeter;
 
 public class ApiProvider {
     public static void main(String[] args) throws InterruptedException {
+        System.setProperty("dubbo.tri.builtin.service.init", "true");
         ServiceConfig<GreeterService> serviceConfig = new ServiceConfig<>();
         serviceConfig.setInterface(GreeterService.class);
         serviceConfig.setRef(new GreeterServiceImpl());
