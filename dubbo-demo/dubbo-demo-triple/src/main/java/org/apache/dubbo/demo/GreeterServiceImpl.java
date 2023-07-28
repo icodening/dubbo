@@ -37,6 +37,11 @@ public class GreeterServiceImpl implements GreeterService {
     }
 
     @Override
+    public CompletableFuture<String> sayHelloAsync1(User user) {
+        return CompletableFuture.supplyAsync(user::getName);
+    }
+
+    @Override
     public CompletableFuture<String> sayHelloAsync2(String request, User obj) {
         System.out.println("param1:" + request);
         return CompletableFuture.supplyAsync(obj::toString);

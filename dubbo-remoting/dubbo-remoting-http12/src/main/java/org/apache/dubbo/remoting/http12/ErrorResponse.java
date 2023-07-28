@@ -14,29 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.remoting.http12;
 
-import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import java.io.Serializable;
 
-import java.util.concurrent.CompletableFuture;
+public class ErrorResponse implements Serializable {
 
-public interface GreeterService {
+    private String status;
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    private String message;
 
+    public String getStatus() {
+        return status;
+    }
 
-    CompletableFuture<String> sayHelloAsync(String request);
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-    CompletableFuture<String> sayHelloAsync1(User user);
+    public String getMessage() {
+        return message;
+    }
 
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    public void setMessage(String message) {
+        this.message = message;
+    }
 }

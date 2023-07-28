@@ -18,9 +18,11 @@ package org.apache.dubbo.remoting.http12.message;
 
 import com.alibaba.fastjson2.JSONObject;
 import org.apache.dubbo.common.utils.JsonUtils;
+import org.apache.dubbo.remoting.http12.CompositeInputStream;
 import org.apache.dubbo.remoting.http12.exception.DecodeException;
 import org.apache.dubbo.remoting.http12.exception.EncodeException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -83,6 +85,9 @@ public class JsonCodec implements HttpMessageCodec {
         List<Object> result = new ArrayList<>();
         try {
             try {
+                if (targetTypes.length == 1) {
+                    return new Object[]{this.decode(dataInputStream, targetTypes[0])};
+                }
                 int len;
                 byte[] data = new byte[4096];
                 StringBuilder builder = new StringBuilder(4096);

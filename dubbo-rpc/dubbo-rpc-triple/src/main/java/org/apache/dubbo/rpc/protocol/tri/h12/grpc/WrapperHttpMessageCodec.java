@@ -83,20 +83,21 @@ public class WrapperHttpMessageCodec implements HttpMessageCodec {
 
     @Override
     public void encode(OutputStream outputStream, Object[] data) throws EncodeException {
+        //TODO
     }
 
     @Override
-    public Object decode(InputStream body, Class<?> targetType) throws DecodeException {
-        return decode(body, new Class[]{targetType})[0];
+    public Object decode(InputStream inputStream, Class<?> targetType) throws DecodeException {
+        return this.decode(inputStream, new Class[]{targetType})[0];
     }
 
     @Override
-    public Object[] decode(InputStream body, Class<?>[] targetTypes) throws DecodeException {
+    public Object[] decode(InputStream inputStream, Class<?>[] targetTypes) throws DecodeException {
         try {
             int len;
             byte[] data = new byte[4096];
             ByteArrayOutputStream bos = new ByteArrayOutputStream(4096);
-            while ((len = body.read(data)) != -1) {
+            while ((len = inputStream.read(data)) != -1) {
                 bos.write(data, 0, len);
             }
             TripleCustomerProtocolWapper.TripleRequestWrapper wrapper = TripleCustomerProtocolWapper.TripleRequestWrapper.parseFrom(

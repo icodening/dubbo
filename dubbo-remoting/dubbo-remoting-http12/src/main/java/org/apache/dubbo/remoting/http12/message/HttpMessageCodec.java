@@ -32,11 +32,17 @@ public interface HttpMessageCodec {
 
     void encode(OutputStream outputStream, Object data) throws EncodeException;
 
-    void encode(OutputStream outputStream, Object[] data) throws EncodeException;
+    default void encode(OutputStream outputStream, Object[] data) throws EncodeException {
+        //default encode first data
+        this.encode(outputStream, data[0]);
+    }
 
     Object decode(InputStream inputStream, Class<?> targetType) throws DecodeException;
 
-    Object[] decode(InputStream inputStream, Class<?>[] targetTypes) throws DecodeException;
+    default Object[] decode(InputStream inputStream, Class<?>[] targetTypes) throws DecodeException {
+        //default decode first target type
+        return new Object[]{this.decode(inputStream, targetTypes[0])};
+    }
 
     MediaType contentType();
 

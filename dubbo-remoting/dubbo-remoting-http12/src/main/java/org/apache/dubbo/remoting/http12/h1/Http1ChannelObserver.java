@@ -16,6 +16,7 @@
  */
 package org.apache.dubbo.remoting.http12.h1;
 
+import org.apache.dubbo.remoting.http12.ErrorResponse;
 import org.apache.dubbo.remoting.http12.HttpChannel;
 import org.apache.dubbo.remoting.http12.HttpChannelObserver;
 import org.apache.dubbo.remoting.http12.HttpHeaderNames;
@@ -101,7 +102,10 @@ public class Http1ChannelObserver implements HttpChannelObserver {
         }
         try {
             HttpOutputMessage httpOutputMessage = this.httpChannel.newOutputMessage();
-            this.httpMessageCodec.encode(httpOutputMessage.getBody(), throwable.getMessage());
+            ErrorResponse errorResponse = new ErrorResponse();
+            errorResponse.setStatus(String.valueOf(statusCode));
+            errorResponse.setMessage(throwable.getMessage());
+            this.httpMessageCodec.encode(httpOutputMessage.getBody(), errorResponse);
             this.getHttpChannel().writeMessage(httpOutputMessage);
         } finally {
             onCompleted();

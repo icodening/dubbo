@@ -105,7 +105,7 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
 
     @Override
     public void cancelByRemote(long errorCode) {
-        this.serverCallListener.onCancel((int) errorCode);
+        this.getServerCallListener().onCancel((int) errorCode);
     }
 
     protected void doOnMetadata(Http2Header metadata) {
@@ -115,7 +115,7 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
             }
             super.onMetadata(metadata);
             Http2ChannelObserver responseObserver = this.responseObserver;
-            responseObserver.setHttpMessageCodec(getCodec());
+            responseObserver.setHttpMessageCodec(getHttpMessageCodec());
         } catch (Throwable e) {
             this.responseObserver.onError(e);
         }
@@ -128,7 +128,7 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
                 super.onData(message);
             }
             if (message.isEndStream()) {
-                serverCallListener.onComplete();
+                getServerCallListener().onComplete();
             }
         } catch (Throwable e) {
             this.responseObserver.onError(e);

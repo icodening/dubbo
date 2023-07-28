@@ -24,7 +24,7 @@ import org.apache.dubbo.rpc.model.FrameworkModel;
 
 public class GrpcHttp2ServerTransportListenerFactory implements Http2ServerTransportListenerFactory {
 
-    public static final String CONTENT_TYPE = "application/grpc+proto";
+    public static final String CONTENT_TYPE = "application/grpc";
 
     @Override
     public Http2TransportListener newInstance(H2StreamChannel streamChannel, URL url, FrameworkModel frameworkModel) {

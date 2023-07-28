@@ -16,7 +16,6 @@
  */
 package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 
-import com.google.protobuf.Message;
 import org.apache.dubbo.remoting.http12.exception.DecodeException;
 import org.apache.dubbo.remoting.http12.exception.EncodeException;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
@@ -34,30 +33,19 @@ public class ProtobufHttpMessageCodec implements HttpMessageCodec {
     @Override
     public void encode(OutputStream outputStream, Object data) throws EncodeException {
         try {
-            ((Message) data).writeTo(outputStream);
+            SingleProtobufUtils.serialize(data, outputStream);
         } catch (IOException e) {
             throw new EncodeException(e);
         }
     }
 
     @Override
-    public void encode(OutputStream outputStream, Object[] data) throws EncodeException {
-
-    }
-
-    @Override
-    public Object decode(InputStream body, Class<?> targetType) throws DecodeException {
+    public Object decode(InputStream inputStream, Class<?> targetType) throws DecodeException {
         try {
-            return SingleProtobufUtils.deserialize(body, targetType);
+            return SingleProtobufUtils.deserialize(inputStream, targetType);
         } catch (IOException e) {
             throw new DecodeException(e);
         }
-    }
-
-    @Override
-    public Object[] decode(InputStream body, Class<?>[] targetTypes) throws DecodeException {
-        //only support one parameter
-        return new Object[]{this.decode(body, targetTypes[0])};
     }
 
     @Override

@@ -21,9 +21,7 @@ import org.apache.dubbo.remoting.http12.exception.DecodeException;
 import org.apache.dubbo.remoting.http12.exception.EncodeException;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
 import org.apache.dubbo.remoting.http12.message.MediaType;
-import org.apache.dubbo.rpc.RpcException;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,13 +32,11 @@ import java.io.OutputStream;
  *
  * @since 3.3
  */
-public class CompatibleLowVersionCodec implements HttpMessageCodec {
+public class GrpcCompositeCodec implements HttpMessageCodec {
 
-    private static final int RESERVED_MASK = 0xFE;
+    public static final GrpcCompositeCodec INSTANCE = new GrpcCompositeCodec();
 
-    private static final int COMPRESSED_FLAG_MASK = 1;
-
-    private static final MediaType MEDIA_TYPE = new MediaType("application", "grpc+proto");
+    private static final MediaType MEDIA_TYPE = new MediaType("application", "grpc");
 
     private final ProtobufHttpMessageCodec protobufHttpMessageCodec = new ProtobufHttpMessageCodec();
 
@@ -68,72 +64,15 @@ public class CompatibleLowVersionCodec implements HttpMessageCodec {
     }
 
     @Override
-    public void encode(OutputStream outputStream, Object[] data) throws EncodeException {
-        if (data[0] instanceof Message) {
-            int serializedSize = ((Message) data[0]).getSerializedSize();
-            //write length
-            writeLength(outputStream, serializedSize);
-            protobufHttpMessageCodec.encode(outputStream, data);
-            return;
-        }
-        //wrapper
-        wrapperHttpMessageCodec.encode(outputStream, data);
-    }
-
-    @Override
     public Object decode(InputStream inputStream, Class<?> targetType) throws DecodeException {
-        try {
-            InputStream bis = toDataInputStream(inputStream);
-            if (Message.class.isAssignableFrom(targetType)) {
-                return protobufHttpMessageCodec.decode(bis, targetType);
-            }
-            //wrapper
-            return wrapperHttpMessageCodec.decode(bis, targetType);
-        } catch (IOException e) {
-            throw new DecodeException(e);
+        if (isProtobuf(targetType)) {
+            return protobufHttpMessageCodec.decode(inputStream, targetType);
         }
+        return wrapperHttpMessageCodec.decode(inputStream, targetType);
     }
 
-    @Override
-    public Object[] decode(InputStream inputStream, Class<?>[] targetTypes) throws DecodeException {
-        if (hasProtobuf(targetTypes)) {
-            return new Object[]{this.decode(inputStream, targetTypes[0])};
-        }
-        try {
-            return wrapperHttpMessageCodec.decode(toDataInputStream(inputStream), targetTypes);
-        } catch (IOException e) {
-            throw new DecodeException(e);
-        }
-    }
-
-    private InputStream toDataInputStream(InputStream inputStream) throws IOException {
-        int type = inputStream.read();
-        if ((type & RESERVED_MASK) != 0) {
-            throw new RpcException("gRPC frame header malformed: reserved bits not zero");
-        }
-        boolean ignoreCompressFlag = (type & COMPRESSED_FLAG_MASK) != 0;
-        byte[] lengthBytes = new byte[4];
-        inputStream.read(lengthBytes);
-        int length = bytesToInt(lengthBytes);
-        byte[] data = new byte[length];
-        inputStream.read(data, 0, length);
-        return new ByteArrayInputStream(data);
-    }
-
-    private static int bytesToInt(byte[] bytes) {
-        return (bytes[0] << 24) & 0xFF |
-            (bytes[1] << 16) & 0xFF |
-            (bytes[2] << 8) & 0xFF |
-            (bytes[3]) & 0xFF;
-    }
-
-    private boolean hasProtobuf(Class<?>[] targetTypes) {
-        for (Class<?> targetType : targetTypes) {
-            if (Message.class.isAssignableFrom(targetType)) {
-                return true;
-            }
-        }
-        return false;
+    private boolean isProtobuf(Class<?> targetType) {
+        return Message.class.isAssignableFrom(targetType);
     }
 
     private static void writeLength(OutputStream outputStream, int length) {
@@ -150,5 +89,10 @@ public class CompatibleLowVersionCodec implements HttpMessageCodec {
     @Override
     public MediaType contentType() {
         return MEDIA_TYPE;
+    }
+
+    @Override
+    public boolean support(String contentType) {
+        return contentType.startsWith(MEDIA_TYPE.getName());
     }
 }

@@ -18,11 +18,23 @@ package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
+import org.apache.dubbo.remoting.http12.ServerCallListener;
+import org.apache.dubbo.remoting.http12.UnaryServerCallListener;
+import org.apache.dubbo.remoting.http12.h2.BiStreamServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
 import org.apache.dubbo.remoting.http12.h2.Http2ChannelObserver;
+import org.apache.dubbo.remoting.http12.h2.Http2InputMessage;
 import org.apache.dubbo.remoting.http12.h2.Http2TransportListener;
+import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
+import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.RpcInvocation;
 import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.protocol.tri.h12.http2.GenericHttp2ServerTransportListener;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.function.Supplier;
 
 public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTransportListener implements Http2TransportListener {
 
@@ -37,5 +49,76 @@ public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTranspor
 
     private void addGrpcTrailers(HttpHeaders httpHeaders) {
         httpHeaders.set("grpc-status", "0");
+    }
+
+    @Override
+    protected UnaryServerCallListener startUnary(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
+        this.getListeningDecoder().request(2);
+        return super.startUnary(invocation, invoker, responseObserver);
+    }
+
+    @Override
+    protected ServerCallListener startServerStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
+        this.getListeningDecoder().request(2);
+        return super.startServerStreaming(invocation, invoker, responseObserver);
+    }
+
+    @Override
+    protected BiStreamServerCallListener startBiStreaming(RpcInvocation invocation, Invoker<?> invoker, Http2ChannelObserver responseObserver) {
+        this.getListeningDecoder().request(1);
+        GrpcBiStreamServerCallListener grpcBiStreamServerCallListener = new GrpcBiStreamServerCallListener(invocation, invoker, responseObserver);
+        grpcBiStreamServerCallListener.setGrpcListeningDecoder(getListeningDecoder());
+        return grpcBiStreamServerCallListener;
+    }
+
+    @Override
+    protected ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes) {
+        GrpcStreamingDecoder grpcStreamingDecoder = new GrpcStreamingDecoder(actualRequestTypes);
+        grpcStreamingDecoder.setListener(new GrpcServerDecodeListener(this::getServerCallListener));
+        return grpcStreamingDecoder;
+    }
+
+    @Override
+    protected void doOnData(Http2InputMessage message) {
+        try {
+            doGrpcDecode(message);
+        } catch (Throwable e) {
+            this.responseObserver.onError(e);
+        }
+    }
+
+    private void doGrpcDecode(Http2InputMessage message) throws IOException {
+        InputStream body = message.getBody();
+        GrpcStreamingDecoder listeningDecoder = this.getListeningDecoder();
+        if (body.available() != 0) {
+            listeningDecoder.decode(body);
+        }
+        if (message.isEndStream()) {
+            listeningDecoder.close();
+        }
+    }
+
+    @Override
+    protected GrpcStreamingDecoder getListeningDecoder() {
+        return (GrpcStreamingDecoder) super.getListeningDecoder();
+    }
+
+    private static class GrpcServerDecodeListener implements ListeningDecoder.Listener {
+
+        private final Supplier<ServerCallListener> serverCallListener;
+
+        private GrpcServerDecodeListener(Supplier<ServerCallListener> serverCallListener) {
+            this.serverCallListener = serverCallListener;
+        }
+
+        @Override
+        public void onMessage(Object message) {
+            this.serverCallListener.get().onMessage(message);
+        }
+
+        @Override
+        public void onClose() {
+            this.serverCallListener.get().onComplete();
+        }
     }
 }

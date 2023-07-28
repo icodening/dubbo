@@ -14,29 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.demo;
+package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 
 import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.demo.hello.HelloReply;
-import org.apache.dubbo.demo.hello.HelloRequest;
+import org.apache.dubbo.remoting.http12.h2.BiStreamServerCallListener;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.RpcInvocation;
 
-import java.util.concurrent.CompletableFuture;
+public class GrpcBiStreamServerCallListener extends BiStreamServerCallListener {
 
-public interface GreeterService {
+    private GrpcStreamingDecoder grpcStreamingDecoder;
 
-    /**
-     * Sends a greeting
-     */
-    HelloReply sayHello(HelloRequest request);
+    public GrpcBiStreamServerCallListener(RpcInvocation invocation, Invoker<?> invoker, StreamObserver<Object> responseObserver) {
+        super(invocation, invoker, responseObserver);
+    }
 
+    public void setGrpcListeningDecoder(GrpcStreamingDecoder grpcStreamingDecoder) {
+        this.grpcStreamingDecoder = grpcStreamingDecoder;
+    }
 
-    CompletableFuture<String> sayHelloAsync(String request);
-
-    CompletableFuture<String> sayHelloAsync1(User user);
-
-    CompletableFuture<String> sayHelloAsync2(String request, User user);
-
-    void serverStream(String request, StreamObserver<String> responseObserver);
-
-    StreamObserver<String> biStream(StreamObserver<String> responseObserver);
+    @Override
+    public void onMessage(Object message) {
+        super.onMessage(message);
+        //AUTO
+        this.grpcStreamingDecoder.request(1);
+    }
 }

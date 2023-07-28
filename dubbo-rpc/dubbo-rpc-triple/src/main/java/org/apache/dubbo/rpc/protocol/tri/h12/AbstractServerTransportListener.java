@@ -25,11 +25,12 @@ import org.apache.dubbo.remoting.http12.HttpInputMessage;
 import org.apache.dubbo.remoting.http12.HttpTransportListener;
 import org.apache.dubbo.remoting.http12.RequestMetadata;
 import org.apache.dubbo.remoting.http12.ServerCallListener;
-import org.apache.dubbo.remoting.http12.exception.DecodeException;
 import org.apache.dubbo.remoting.http12.exception.IllegalPathException;
 import org.apache.dubbo.remoting.http12.exception.UnimplementedException;
 import org.apache.dubbo.remoting.http12.exception.UnsupportedMediaTypeException;
+import org.apache.dubbo.remoting.http12.message.DefaultListeningDecoder;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
+import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
 import org.apache.dubbo.remoting.http12.message.MethodMetadata;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.PathResolver;
@@ -43,7 +44,6 @@ import org.apache.dubbo.rpc.protocol.tri.TripleProtocol;
 import org.apache.dubbo.rpc.service.ServiceDescriptorInternalCache;
 import org.apache.dubbo.rpc.stub.StubSuppliers;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
@@ -53,9 +53,9 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
 
     private final FrameworkModel frameworkModel;
 
-    private HttpMessageCodec codec;
+    private HttpMessageCodec httpMessageCodec;
 
-    protected ServerCallListener serverCallListener;
+    private ServerCallListener serverCallListener;
 
     private ServiceDescriptor serviceDescriptor;
 
@@ -63,56 +63,62 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
 
     private MethodMetadata methodMetadata;
 
+    private ListeningDecoder listeningDecoder;
+
+    private HEADER httpMetadata;
+
     public AbstractServerTransportListener(FrameworkModel frameworkModel) {
         this.frameworkModel = frameworkModel;
         this.pathResolver = frameworkModel.getExtensionLoader(PathResolver.class).getDefaultExtension();
     }
 
-    protected FrameworkModel getFrameworkModel() {
-        return frameworkModel;
-    }
-
     @Override
     public void onMetadata(HEADER metadata) {
+        this.httpMetadata = metadata;
         String path = metadata.path();
         HttpHeaders headers = metadata.headers();
+        //1.check necessary header
         String contentType = headers.getFirst(HttpHeaderNames.CONTENT_TYPE.getName());
         if (contentType == null) {
-            throw new UnsupportedMediaTypeException("null");
+            throw new UnsupportedMediaTypeException("'" + HttpHeaderNames.CONTENT_TYPE.getName() + "' must be not null.");
         }
         HttpMessageCodec httpMessageCodec = determineHttpMessageCodec(contentType);
-        String[] parts = path.split("/");
         if (httpMessageCodec == null) {
             throw new UnsupportedMediaTypeException(contentType);
         }
+        this.httpMessageCodec = httpMessageCodec;
+
+        //2. check service
+        String[] parts = path.split("/");
         if (parts.length != 3) {
             throw new IllegalPathException(path);
         }
-        this.codec = httpMessageCodec;
         String serviceName = parts[1];
         String originalMethodName = parts[2];
         boolean hasStub = pathResolver.hasNativeStub(path);
         Invoker<?> invoker = getInvoker(metadata, serviceName);
-
         if (invoker == null) {
             throw new UnimplementedException(serviceName);
         }
-        ServiceDescriptor serviceDescriptor = findServiceDescriptor(invoker, serviceName, hasStub);
-        MethodDescriptor methodDescriptor = findMethodDescriptor(serviceDescriptor, originalMethodName, hasStub);
-        this.serviceDescriptor = serviceDescriptor;
-        this.methodDescriptor = methodDescriptor;
+        this.serviceDescriptor = findServiceDescriptor(invoker, serviceName, hasStub);
+        this.methodDescriptor = findMethodDescriptor(serviceDescriptor, originalMethodName, hasStub);
         this.methodMetadata = MethodMetadata.fromMethodDescriptor(methodDescriptor);
         RpcInvocation rpcInvocation = buildRpcInvocation(invoker, serviceDescriptor, methodDescriptor);
+        this.listeningDecoder = newListeningDecoder(this.httpMessageCodec, this.methodMetadata.getActualRequestTypes());
         this.serverCallListener = startListener(rpcInvocation, methodDescriptor, invoker);
+    }
+
+    protected ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes) {
+        DefaultListeningDecoder listeningDecoder = new DefaultListeningDecoder(codec, actualRequestTypes);
+        listeningDecoder.setListener(message -> serverCallListener.onMessage(message));
+        return listeningDecoder;
     }
 
     @Override
     public void onData(MESSAGE message) {
         //decode message
         InputStream body = message.getBody();
-        Class<?>[] actualRequestTypes = methodMetadata.getActualRequestTypes();
-        Object[] decodeParameters = this.codec.decode(body, actualRequestTypes);
-        this.serverCallListener.onMessage(decodeParameters);
+        this.listeningDecoder.decode(body);
     }
 
 
@@ -135,17 +141,6 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
         return invoker;
     }
 
-    protected ServiceDescriptor getServiceDescriptor() {
-        return serviceDescriptor;
-    }
-
-    protected MethodDescriptor getMethodDescriptor() {
-        return methodDescriptor;
-    }
-
-    protected MethodMetadata getMethodMetadata() {
-        return methodMetadata;
-    }
 
     protected HttpMessageCodec determineHttpMessageCodec(String contentType) {
         for (HttpMessageCodec httpMessageCodec : frameworkModel.getExtensionLoader(HttpMessageCodec.class).getSupportedExtensionInstances()) {
@@ -202,13 +197,6 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
                                                         MethodDescriptor methodDescriptor,
                                                         Invoker<?> invoker);
 
-    protected PathResolver getPathResolver() {
-        return pathResolver;
-    }
-
-    protected HttpMessageCodec getCodec() {
-        return codec;
-    }
 
     private static ServiceDescriptor getStubServiceDescriptor(URL url, String serviceName) {
         ServiceDescriptor serviceDescriptor;
@@ -277,4 +265,37 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
         }
         return methodDescriptor;
     }
+
+    protected FrameworkModel getFrameworkModel() {
+        return frameworkModel;
+    }
+
+    protected HEADER getHttpMetadata() {
+        return httpMetadata;
+    }
+
+    protected ServiceDescriptor getServiceDescriptor() {
+        return serviceDescriptor;
+    }
+
+    protected MethodDescriptor getMethodDescriptor() {
+        return methodDescriptor;
+    }
+
+    protected MethodMetadata getMethodMetadata() {
+        return methodMetadata;
+    }
+
+    protected HttpMessageCodec getHttpMessageCodec() {
+        return httpMessageCodec;
+    }
+
+    protected ServerCallListener getServerCallListener() {
+        return serverCallListener;
+    }
+
+    protected ListeningDecoder getListeningDecoder() {
+        return this.listeningDecoder;
+    }
+
 }

@@ -24,8 +24,13 @@ import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
 import org.apache.dubbo.demo.GreeterService;
+import org.apache.dubbo.demo.hello.GrpcGreeter;
+import org.apache.dubbo.demo.hello.HelloReply;
+import org.apache.dubbo.demo.hello.HelloRequest;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 public class ApiConsumer {
     public static void main(String[] args) throws InterruptedException, IOException {
@@ -34,42 +39,56 @@ public class ApiConsumer {
         referenceConfig.setCheck(false);
         referenceConfig.setProtocol(CommonConstants.TRIPLE);
         referenceConfig.setLazy(true);
-        referenceConfig.setTimeout(100000);
+        referenceConfig.setTimeout(1000);
+
+        ReferenceConfig<GrpcGreeter> referenceConfig2 = new ReferenceConfig<>();
+        referenceConfig2.setInterface(GrpcGreeter.class);
+        referenceConfig2.setCheck(false);
+        referenceConfig2.setProtocol(CommonConstants.TRIPLE);
+        referenceConfig2.setLazy(true);
+        referenceConfig2.setTimeout(1000);
+
+        List<ReferenceConfig> referenceConfigs = Arrays.asList(referenceConfig, referenceConfig2);
+
 
         DubboBootstrap bootstrap = DubboBootstrap.getInstance();
         bootstrap.application(new ApplicationConfig("dubbo-demo-triple-api-consumer"))
             .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
             .protocol(new ProtocolConfig(CommonConstants.TRIPLE, -1))
-            .reference(referenceConfig)
+            .references(referenceConfigs)
             .start();
 
         GreeterService greeterService = referenceConfig.get();
+        GrpcGreeter grpcGreeter = referenceConfig2.get();
         System.out.println("dubbo referenceConfig started");
         try {
-            StreamObserver<String> request = greeterService.biStream(new StreamObserver<String>() {
-                @Override
-                public void onNext(String data) {
-                    System.out.println(data);
-                }
+            doGrpcStub(grpcGreeter);
+            doWrapper(greeterService);
 
-                @Override
-                public void onError(Throwable throwable) {
-                    throwable.printStackTrace();
-                }
-
-                @Override
-                public void onCompleted() {
-
-                }
-            });
-            for (int i = 0; i < 5; i++) {
-                request.onNext("hello " + i);
-            }
-            Thread.sleep(1000);
-            for (int i = 0; i < 5; i++) {
-                request.onNext("world " + i);
-            }
-            request.onCompleted();
+//            StreamObserver<String> request = greeterService.biStream(new StreamObserver<String>() {
+//                @Override
+//                public void onNext(String data) {
+//                    System.out.println(data);
+//                }
+//
+//                @Override
+//                public void onError(Throwable throwable) {
+//                    throwable.printStackTrace();
+//                }
+//
+//                @Override
+//                public void onCompleted() {
+//
+//                }
+//            });
+//            for (int i = 0; i < 5; i++) {
+//                request.onNext("hello " + i);
+//            }
+//            Thread.sleep(1000);
+//            for (int i = 0; i < 5; i++) {
+//                request.onNext("world " + i);
+//            }
+//            request.onCompleted();
 //            for (int i = 0; i < 10; i++) {
 //                final HelloReply reply = greeterService.sayHello(HelloRequest.newBuilder()
 //                    .setName("triple")
@@ -84,5 +103,72 @@ public class ApiConsumer {
             t.printStackTrace();
         }
         System.in.read();
+    }
+
+    private static void doWrapper(GreeterService greeterService) {
+        HelloRequest unary = HelloRequest.newBuilder().setName("greeterService unary").build();
+        System.out.println(greeterService.sayHello(unary));
+
+        greeterService.serverStream("greeterService server-stream", new StreamObserver<String>() {
+            @Override
+            public void onNext(String data) {
+                System.out.println(data);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("greeterService server-stream complete.");
+            }
+        });
+    }
+
+    private static void doGrpcStub(GrpcGreeter grpcGreeter){
+        HelloReply reply = grpcGreeter.exchange(HelloRequest.newBuilder().setName("hello world grpc").build());
+        System.out.println(reply.getMessage());
+
+        //server stream
+        HelloRequest serverStream = HelloRequest.newBuilder().setName("hello world grpc. server stream").build();
+        grpcGreeter.serverStream(serverStream, new StreamObserver<HelloReply>() {
+            @Override
+            public void onNext(HelloReply data) {
+                System.out.println(data.getMessage());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("server stream complete.");
+            }
+        });
+
+        //bistream
+        StreamObserver<HelloRequest> requestObserver = grpcGreeter.biStream(new StreamObserver<HelloReply>() {
+            @Override
+            public void onNext(HelloReply data) {
+                System.out.println(data);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        });
+        HelloRequest biStream = HelloRequest.newBuilder().setName("hello world grpc. bi stream").build();
+        requestObserver.onNext(biStream);
+        requestObserver.onCompleted();
     }
 }

@@ -51,10 +51,10 @@ public class DefaultHttp11ServerTransportListener extends AbstractServerTranspor
                                                Invoker<?> invoker) {
         switch (methodDescriptor.getRpcType()) {
             case UNARY:
-                Http1ChannelObserver http1ChannelObserver = new Http1ChannelObserver(httpChannel, getCodec());
+                Http1ChannelObserver http1ChannelObserver = new Http1ChannelObserver(httpChannel, getHttpMessageCodec());
                 return new AutoCompleteUnaryServerCallListener(invocation, invoker, http1ChannelObserver);
             case SERVER_STREAM:
-                Http1ChannelObserver serverStreamChannelObserver = new Http1ServerStreamChannelObserver(httpChannel, getCodec());
+                Http1ChannelObserver serverStreamChannelObserver = new Http1ServerStreamChannelObserver(httpChannel, getHttpMessageCodec());
                 return new AutoCompleteServerStreamServerCallListener(invocation, invoker, serverStreamChannelObserver);
             default:
                 throw new UnsupportedOperationException("HTTP1.x only support unary and server-stream");

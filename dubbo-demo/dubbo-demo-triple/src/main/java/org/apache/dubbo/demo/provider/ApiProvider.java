@@ -22,8 +22,10 @@ import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.config.ServiceConfig;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
+import org.apache.dubbo.demo.GrpcGreeterImpl;
 import org.apache.dubbo.demo.GreeterService;
 import org.apache.dubbo.demo.GreeterServiceImpl;
+import org.apache.dubbo.demo.hello.GrpcGreeter;
 
 public class ApiProvider {
     public static void main(String[] args) throws InterruptedException {
@@ -31,11 +33,16 @@ public class ApiProvider {
         serviceConfig.setInterface(GreeterService.class);
         serviceConfig.setRef(new GreeterServiceImpl());
 
+        ServiceConfig<GrpcGreeter> serviceConfig2 = new ServiceConfig<>();
+        serviceConfig2.setInterface(GrpcGreeter.class);
+        serviceConfig2.setRef(new GrpcGreeterImpl());
+
         DubboBootstrap bootstrap = DubboBootstrap.getInstance();
         bootstrap.application(new ApplicationConfig("dubbo-demo-triple-api-provider"))
             .registry(new RegistryConfig("zookeeper://127.0.0.1:2181"))
             .protocol(new ProtocolConfig(CommonConstants.TRIPLE, -1))
             .service(serviceConfig)
+            .service(serviceConfig2)
             .start()
             .await();
     }
