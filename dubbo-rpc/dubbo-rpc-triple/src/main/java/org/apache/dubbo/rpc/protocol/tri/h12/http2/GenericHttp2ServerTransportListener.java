@@ -26,9 +26,9 @@ import org.apache.dubbo.remoting.http12.h2.BiStreamServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
 import org.apache.dubbo.remoting.http12.h2.Http2Header;
 import org.apache.dubbo.remoting.http12.h2.Http2InputMessage;
-import org.apache.dubbo.remoting.http12.h2.Http2LengthFieldStreamingDecoder;
 import org.apache.dubbo.remoting.http12.h2.Http2ServerChannelObserver;
 import org.apache.dubbo.remoting.http12.h2.Http2TransportListener;
+import org.apache.dubbo.remoting.http12.message.DefaultListeningDecoder;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
 import org.apache.dubbo.remoting.http12.message.JsonCodec;
 import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
@@ -69,7 +69,7 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
     }
 
     @Override
-    protected Executor initializationExecutor(Http2Header metadata) {
+    protected Executor initializeExecutor(Http2Header metadata) {
         if (serializingExecutor == null) {
             Executor executor = executorSupport.getExecutor(metadata);
             this.serializingExecutor = new SerializingExecutor(executor);
@@ -115,9 +115,8 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
 
     @Override
     protected ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes) {
-        Http2LengthFieldStreamingDecoder listeningDecoder = new Http2LengthFieldStreamingDecoder(actualRequestTypes);
-        listeningDecoder.setHttpMessageCodec(codec);
-        ServerCallListener serverCallListener = startListener(getRpcInvocation(), getMethodDescriptor(), getRpcInvocation().getInvoker());
+        DefaultListeningDecoder listeningDecoder = new DefaultListeningDecoder(codec, actualRequestTypes);
+        ServerCallListener serverCallListener = startListener(getRpcInvocation(), getMethodDescriptor(), getInvoker());
         listeningDecoder.setListener(serverCallListener::onMessage);
         return listeningDecoder;
     }
@@ -128,10 +127,23 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
                 return;
             }
             super.doOnMetadata(metadata);
-            Http2ServerChannelObserver responseObserver = this.responseObserver;
-            responseObserver.setHttpMessageCodec(getHttpMessageCodec());
         } catch (Throwable e) {
             this.responseObserver.onError(e);
+        }
+    }
+
+    @Override
+    protected void onMetadataCompletion(Http2Header metadata) {
+        super.onMetadataCompletion(metadata);
+        Http2ServerChannelObserver responseObserver = this.responseObserver;
+        responseObserver.setHttpMessageCodec(getHttpMessageCodec());
+    }
+
+    @Override
+    protected void doOnData(Http2InputMessage message) {
+        super.doOnData(message);
+        if (message.isEndStream()) {
+            serverCallListener.onComplete();
         }
     }
 

@@ -22,7 +22,6 @@ import org.apache.dubbo.remoting.http12.ServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.BiStreamServerCallListener;
 import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
 import org.apache.dubbo.remoting.http12.h2.Http2Header;
-import org.apache.dubbo.remoting.http12.h2.Http2InputMessage;
 import org.apache.dubbo.remoting.http12.h2.Http2ServerChannelObserver;
 import org.apache.dubbo.remoting.http12.h2.Http2TransportListener;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
@@ -86,14 +85,6 @@ public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTranspor
                 break;
             default:
                 throw new IllegalStateException("Can not reach here");
-        }
-    }
-
-    @Override
-    protected void doOnData(Http2InputMessage message) {
-        super.doOnData(message);
-        if (message.isEndStream()) {
-            serverCallListener.onComplete();
         }
     }
 

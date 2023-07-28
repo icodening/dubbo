@@ -75,14 +75,14 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
         this.pathResolver = frameworkModel.getExtensionLoader(PathResolver.class).getDefaultExtension();
     }
 
-    protected Executor initializationExecutor(HEADER metadata) {
+    protected Executor initializeExecutor(HEADER metadata) {
         //default direct executor
         return Runnable::run;
     }
 
     @Override
     public void onMetadata(HEADER metadata) {
-        this.executor = initializationExecutor(metadata);
+        this.executor = initializeExecutor(metadata);
         executor.execute(() -> doOnMetadata(metadata));
     }
 

@@ -163,6 +163,15 @@
                     <protocArtifact>com.google.protobuf:protoc:${protobuf-java_version}:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>triple-java</pluginId>
                     <outputDirectory>build/generated/source/proto/main/java</outputDirectory>
+                    <protocPlugins>
+                        <protocPlugin>
+                            <id>triple-java</id>
+                            <groupId>org.apache.dubbo</groupId>
+                            <artifactId>dubbo-compiler</artifactId>
+                            <version>${project.version}</version>
+                            <mainClass>org.apache.dubbo.gen.tri.Dubbo3TripleGenerator</mainClass>
+                        </protocPlugin>
+                    </protocPlugins>
                 </configuration>
                 <executions>
                     <execution>
