@@ -18,13 +18,11 @@ package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
-import org.apache.dubbo.remoting.http12.ServerCallListener;
 import org.apache.dubbo.remoting.http12.exception.UnimplementedException;
 import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
 import org.apache.dubbo.remoting.http12.h2.Http2Header;
 import org.apache.dubbo.remoting.http12.h2.Http2TransportListener;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
-import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
 import org.apache.dubbo.remoting.http12.message.StreamingDecoder;
 import org.apache.dubbo.rpc.model.FrameworkModel;
 import org.apache.dubbo.rpc.protocol.tri.compressor.DeCompressor;
@@ -79,24 +77,5 @@ public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTranspor
     @Override
     protected GrpcStreamingDecoder getStreamingDecoder() {
         return (GrpcStreamingDecoder) super.getStreamingDecoder();
-    }
-
-    private static class GrpcServerDecodeListener implements ListeningDecoder.Listener {
-
-        private final ServerCallListener serverCallListener;
-
-        private GrpcServerDecodeListener(ServerCallListener serverCallListener) {
-            this.serverCallListener = serverCallListener;
-        }
-
-        @Override
-        public void onMessage(Object message) {
-            this.serverCallListener.onMessage(message);
-        }
-
-        @Override
-        public void onClose() {
-            this.serverCallListener.onComplete();
-        }
     }
 }
