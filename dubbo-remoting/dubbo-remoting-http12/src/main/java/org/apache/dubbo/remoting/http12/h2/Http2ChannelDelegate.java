@@ -14,53 +14,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12.netty4.h1;
+package org.apache.dubbo.remoting.http12.h2;
 
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.channel.Channel;
-import org.apache.dubbo.remoting.http12.HttpChannel;
 import org.apache.dubbo.remoting.http12.HttpMetadata;
 import org.apache.dubbo.remoting.http12.HttpOutputMessage;
-import org.apache.dubbo.remoting.http12.h1.Http1OutputMessage;
-import org.apache.dubbo.remoting.http12.netty4.NettyHttpChannelFutureListener;
 
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
 
-public class NettyHttp1Channel implements HttpChannel {
+public class Http2ChannelDelegate implements H2StreamChannel {
 
-    private final Channel channel;
+    private final H2StreamChannel h2StreamChannel;
 
-    public NettyHttp1Channel(Channel channel) {
-        this.channel = channel;
+    public Http2ChannelDelegate(H2StreamChannel h2StreamChannel) {
+        this.h2StreamChannel = h2StreamChannel;
+    }
+
+    public H2StreamChannel getH2StreamChannel() {
+        return h2StreamChannel;
     }
 
     @Override
     public CompletableFuture<Void> writeHeader(HttpMetadata httpMetadata) {
-        NettyHttpChannelFutureListener nettyHttpChannelFutureListener = new NettyHttpChannelFutureListener();
-        this.channel.writeAndFlush(httpMetadata).addListener(nettyHttpChannelFutureListener);
-        return nettyHttpChannelFutureListener;
+        return h2StreamChannel.writeHeader(httpMetadata);
     }
 
     @Override
     public CompletableFuture<Void> writeMessage(HttpOutputMessage httpOutputMessage) {
-        NettyHttpChannelFutureListener nettyHttpChannelFutureListener = new NettyHttpChannelFutureListener();
-        this.channel.writeAndFlush(httpOutputMessage).addListener(nettyHttpChannelFutureListener);
-        return nettyHttpChannelFutureListener;
-    }
-
-    @Override
-    public HttpOutputMessage newOutputMessage() {
-        return new Http1OutputMessage(new ByteBufOutputStream(channel.alloc().buffer()));
+        return h2StreamChannel.writeMessage(httpOutputMessage);
     }
 
     @Override
     public SocketAddress remoteAddress() {
-        return channel.remoteAddress();
+        return h2StreamChannel.remoteAddress();
     }
 
     @Override
     public void flush() {
+        h2StreamChannel.flush();
+    }
 
+    @Override
+    public CompletableFuture<Void> writeResetFrame(long errorCode) {
+        return h2StreamChannel.writeResetFrame(errorCode);
+    }
+
+    @Override
+    public Http2OutputMessage newOutputMessage(boolean endStream) {
+        return h2StreamChannel.newOutputMessage(endStream);
     }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.dubbo.remoting.http12.netty4.h2;
 
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
@@ -33,8 +32,6 @@ import java.util.concurrent.CompletableFuture;
 
 public class NettyH2StreamChannel implements H2StreamChannel {
 
-    //WriteQueue
-
     private final Http2StreamChannel http2StreamChannel;
 
     public NettyH2StreamChannel(Http2StreamChannel http2StreamChannel) {
@@ -45,14 +42,14 @@ public class NettyH2StreamChannel implements H2StreamChannel {
     public CompletableFuture<Void> writeHeader(HttpMetadata httpMetadata) {
         //WriteQueue.enqueue header frame
         NettyHttpChannelFutureListener nettyHttpChannelFutureListener = new NettyHttpChannelFutureListener();
-        http2StreamChannel.writeAndFlush(httpMetadata).addListener(nettyHttpChannelFutureListener);
+        http2StreamChannel.write(httpMetadata).addListener(nettyHttpChannelFutureListener);
         return nettyHttpChannelFutureListener;
     }
 
     @Override
     public CompletableFuture<Void> writeMessage(HttpOutputMessage httpOutputMessage) {
         NettyHttpChannelFutureListener nettyHttpChannelFutureListener = new NettyHttpChannelFutureListener();
-        http2StreamChannel.writeAndFlush(httpOutputMessage).addListener(nettyHttpChannelFutureListener);
+        http2StreamChannel.write(httpOutputMessage).addListener(nettyHttpChannelFutureListener);
         return nettyHttpChannelFutureListener;
     }
 
@@ -69,10 +66,15 @@ public class NettyH2StreamChannel implements H2StreamChannel {
     }
 
     @Override
+    public void flush() {
+        this.http2StreamChannel.flush();
+    }
+
+    @Override
     public CompletableFuture<Void> writeResetFrame(long errorCode) {
         DefaultHttp2ResetFrame resetFrame = new DefaultHttp2ResetFrame(errorCode);
         NettyHttpChannelFutureListener nettyHttpChannelFutureListener = new NettyHttpChannelFutureListener();
-        http2StreamChannel.writeAndFlush(resetFrame).addListener(nettyHttpChannelFutureListener);
+        http2StreamChannel.write(resetFrame).addListener(nettyHttpChannelFutureListener);
         return nettyHttpChannelFutureListener;
     }
 }

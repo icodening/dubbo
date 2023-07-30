@@ -77,7 +77,7 @@ public class NettyHttp2FrameCodec extends ChannelDuplexHandler {
         for (Map.Entry<CharSequence, CharSequence> header : headers) {
             head.set(header.getKey().toString(), header.getValue().toString());
         }
-        return new Http2MetadataFrame(head, endStream);
+        return new Http2MetadataFrame(headersFrame.stream().id(), head, endStream);
     }
 
     private Http2InputMessage onHttp2DataFrame(Http2DataFrame dataFrame) {

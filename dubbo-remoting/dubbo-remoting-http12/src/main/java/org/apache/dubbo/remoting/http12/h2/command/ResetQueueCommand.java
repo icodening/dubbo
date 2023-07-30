@@ -14,21 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12;
+package org.apache.dubbo.remoting.http12.h2.command;
 
-import java.net.SocketAddress;
-import java.util.concurrent.CompletableFuture;
+import org.apache.dubbo.remoting.http12.command.HttpChannelQueueCommand;
+import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
 
-public interface HttpChannel {
+public class ResetQueueCommand extends HttpChannelQueueCommand {
 
-    CompletableFuture<Void> writeHeader(HttpMetadata httpMetadata);
+    private final long errorCode;
 
-    CompletableFuture<Void> writeMessage(HttpOutputMessage httpOutputMessage);
+    public ResetQueueCommand(long errorCode) {
+        this.errorCode = errorCode;
+    }
 
-    HttpOutputMessage newOutputMessage();
-
-    SocketAddress remoteAddress();
-
-    void flush();
-
+    @Override
+    public void run() {
+        ((H2StreamChannel) getHttpChannel())
+            .writeResetFrame(errorCode)
+            .whenComplete((unused, throwable) -> {
+                if (throwable != null) {
+                    completeExceptionally(throwable);
+                } else {
+                    complete(unused);
+                }
+            });
+    }
 }

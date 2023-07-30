@@ -14,44 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12.h2;
+package org.apache.dubbo.remoting.http12.command;
 
-import org.apache.dubbo.remoting.http12.HttpHeaders;
+import org.apache.dubbo.common.BatchExecutorQueue;
 
-public class Http2MetadataFrame implements Http2Header {
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
-    private final int streamId;
+public class HttpWriteQueue extends BatchExecutorQueue<HttpChannelQueueCommand> {
 
-    private final HttpHeaders headers;
+    private final Executor executor;
 
-    private final boolean endStream;
-
-    public Http2MetadataFrame(HttpHeaders headers) {
-        this(headers, false);
+    public HttpWriteQueue(Executor executor) {
+        this.executor = executor;
     }
 
-    public Http2MetadataFrame(HttpHeaders headers, boolean endStream) {
-        this(-1, headers, endStream);
-    }
-
-    public Http2MetadataFrame(int streamId, HttpHeaders headers, boolean endStream) {
-        this.streamId = streamId;
-        this.headers = headers;
-        this.endStream = endStream;
+    public CompletableFuture<Void> enqueue(HttpChannelQueueCommand cmd) {
+        this.enqueue(cmd, this.executor);
+        return cmd;
     }
 
     @Override
-    public HttpHeaders headers() {
-        return headers;
+    protected void prepare(HttpChannelQueueCommand item) {
+        item.run();
     }
 
     @Override
-    public int id() {
-        return streamId;
-    }
-
-    @Override
-    public boolean isEndStream() {
-        return endStream;
+    protected void flush(HttpChannelQueueCommand item) {
+        item.run();
+        item.getHttpChannel().flush();
     }
 }

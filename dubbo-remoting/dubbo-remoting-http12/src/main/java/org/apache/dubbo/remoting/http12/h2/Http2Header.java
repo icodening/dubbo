@@ -33,4 +33,9 @@ public interface Http2Header extends RequestMetadata, Http2StreamFrame {
     default String status() {
         return headers().getFirst(Http2Headers.STATUS.getName());
     }
+
+    @Override
+    default String name() {
+        return "HEADER";
+    }
 }

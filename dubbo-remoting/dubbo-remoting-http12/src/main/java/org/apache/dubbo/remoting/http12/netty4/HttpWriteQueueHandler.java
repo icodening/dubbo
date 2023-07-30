@@ -14,44 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12.h2;
+package org.apache.dubbo.remoting.http12.netty4;
 
-import org.apache.dubbo.remoting.http12.HttpHeaders;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoop;
+import org.apache.dubbo.remoting.http12.command.HttpWriteQueue;
 
-public class Http2MetadataFrame implements Http2Header {
+public class HttpWriteQueueHandler extends ChannelInboundHandlerAdapter {
 
-    private final int streamId;
+    private HttpWriteQueue writeQueue;
 
-    private final HttpHeaders headers;
-
-    private final boolean endStream;
-
-    public Http2MetadataFrame(HttpHeaders headers) {
-        this(headers, false);
-    }
-
-    public Http2MetadataFrame(HttpHeaders headers, boolean endStream) {
-        this(-1, headers, endStream);
-    }
-
-    public Http2MetadataFrame(int streamId, HttpHeaders headers, boolean endStream) {
-        this.streamId = streamId;
-        this.headers = headers;
-        this.endStream = endStream;
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        EventLoop eventLoop = ctx.channel().eventLoop();
+        this.writeQueue = new HttpWriteQueue(eventLoop);
     }
 
     @Override
-    public HttpHeaders headers() {
-        return headers;
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        this.writeQueue = null;
     }
 
-    @Override
-    public int id() {
-        return streamId;
-    }
-
-    @Override
-    public boolean isEndStream() {
-        return endStream;
+    public HttpWriteQueue getWriteQueue() {
+        return writeQueue;
     }
 }

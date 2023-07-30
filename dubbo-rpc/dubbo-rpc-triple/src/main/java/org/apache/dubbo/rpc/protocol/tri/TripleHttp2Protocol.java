@@ -39,6 +39,7 @@ import org.apache.dubbo.remoting.api.AbstractWireProtocol;
 import org.apache.dubbo.remoting.api.pu.ChannelHandlerPretender;
 import org.apache.dubbo.remoting.api.pu.ChannelOperator;
 import org.apache.dubbo.remoting.api.ssl.ContextOperator;
+import org.apache.dubbo.remoting.http12.netty4.HttpWriteQueueHandler;
 import org.apache.dubbo.remoting.http12.netty4.h1.NettyHttp1Codec;
 import org.apache.dubbo.remoting.http12.netty4.h1.NettyHttp1ConnectionHandler;
 import org.apache.dubbo.remoting.http12.netty4.h2.NettyHttp2FrameCodec;
@@ -232,6 +233,7 @@ public class TripleHttp2Protocol extends AbstractWireProtocol implements ScopeMo
                     p.addLast(new NettyHttp2ProtocolSelectorHandler(url, frameworkModel, GenericHttp2ServerTransportListenerFactory.INSTANCE));
                 }
             });
+        handlers.add(new ChannelHandlerPretender(new HttpWriteQueueHandler()));
         handlers.add(new ChannelHandlerPretender(codec));
         handlers.add(new ChannelHandlerPretender(new FlushConsolidationHandler(64, true)));
         handlers.add(new ChannelHandlerPretender(new TripleServerConnectionHandler()));
