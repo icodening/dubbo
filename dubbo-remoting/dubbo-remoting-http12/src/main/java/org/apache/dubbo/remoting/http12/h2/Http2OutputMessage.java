@@ -20,4 +20,13 @@ import org.apache.dubbo.remoting.http12.HttpOutputMessage;
 
 public interface Http2OutputMessage extends HttpOutputMessage, Http2StreamFrame {
 
+    @Override
+    default String name() {
+        return "DATA";
+    }
+
+    @Override
+    default int id() {
+        return -1;
+    }
 }

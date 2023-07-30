@@ -43,16 +43,6 @@ public class Http2OutputMessageFrame implements Http2OutputMessage {
     }
 
     @Override
-    public String name() {
-        return "DATA";
-    }
-
-    @Override
-    public int id() {
-        return -1;
-    }
-
-    @Override
     public boolean isEndStream() {
         return endStream;
     }

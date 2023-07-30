@@ -14,13 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12;
+package org.apache.dubbo.remoting.http12.h1;
 
-public class SimpleHttpMetadata implements HttpMetadata {
+import org.apache.dubbo.remoting.http12.HttpHeaders;
+import org.apache.dubbo.remoting.http12.HttpMetadata;
+
+public class Http1Metadata implements HttpMetadata {
 
     private final HttpHeaders headers;
 
-    public SimpleHttpMetadata(HttpHeaders headers) {
+    public Http1Metadata(HttpHeaders headers) {
         this.headers = headers;
     }
 

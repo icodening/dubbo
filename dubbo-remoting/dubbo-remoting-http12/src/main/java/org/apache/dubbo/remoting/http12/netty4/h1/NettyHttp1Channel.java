@@ -21,7 +21,7 @@ import io.netty.channel.Channel;
 import org.apache.dubbo.remoting.http12.HttpChannel;
 import org.apache.dubbo.remoting.http12.HttpMetadata;
 import org.apache.dubbo.remoting.http12.HttpOutputMessage;
-import org.apache.dubbo.remoting.http12.SimpleHttpOutputMessage;
+import org.apache.dubbo.remoting.http12.h1.Http1OutputMessage;
 import org.apache.dubbo.remoting.http12.netty4.NettyHttpChannelFutureListener;
 
 import java.net.SocketAddress;
@@ -51,7 +51,7 @@ public class NettyHttp1Channel implements HttpChannel {
 
     @Override
     public HttpOutputMessage newOutputMessage() {
-        return new SimpleHttpOutputMessage(new ByteBufOutputStream(channel.alloc().buffer()));
+        return new Http1OutputMessage(new ByteBufOutputStream(channel.alloc().buffer()));
     }
 
     @Override

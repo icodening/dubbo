@@ -23,7 +23,7 @@ public interface HttpOutputMessage {
 
     HttpOutputMessage EMPTY_MESSAGE = new HttpOutputMessage() {
 
-        private final OutputStream INPUT_STREAM = new ByteArrayOutputStream();
+        private final OutputStream INPUT_STREAM = new ByteArrayOutputStream(0);
 
         @Override
         public OutputStream getBody() {

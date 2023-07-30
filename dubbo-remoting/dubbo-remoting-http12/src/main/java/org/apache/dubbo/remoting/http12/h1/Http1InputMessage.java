@@ -14,21 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12;
+package org.apache.dubbo.remoting.http12.h1;
 
-import java.io.OutputStream;
+import org.apache.dubbo.remoting.http12.HttpInputMessage;
 
-public class SimpleHttpOutputMessage implements HttpOutputMessage {
+import java.io.InputStream;
 
-    private final OutputStream outputStream;
+public class Http1InputMessage implements HttpInputMessage {
 
-    public SimpleHttpOutputMessage(OutputStream outputStream) {
-        this.outputStream = outputStream;
+    private final InputStream body;
+
+    public Http1InputMessage(InputStream body) {
+        this.body = body;
     }
 
     @Override
-    public OutputStream getBody() {
-        return outputStream;
+    public InputStream getBody() {
+        return body;
     }
-
 }

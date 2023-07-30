@@ -31,7 +31,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import org.apache.dubbo.remoting.http12.HttpHeaderNames;
 import org.apache.dubbo.remoting.http12.HttpMetadata;
 import org.apache.dubbo.remoting.http12.HttpOutputMessage;
-import org.apache.dubbo.remoting.http12.SimpleHttpInputMessage;
+import org.apache.dubbo.remoting.http12.h1.Http1InputMessage;
 import org.apache.dubbo.remoting.http12.h1.DefaultHttp1Request;
 import org.apache.dubbo.remoting.http12.h1.Http1Request;
 import org.apache.dubbo.remoting.http12.h1.Http1RequestMetadata;
@@ -57,7 +57,7 @@ public class NettyHttp1Codec extends ChannelDuplexHandler {
                 httpHeaders.set(key, header.getValue());
             }
             http1RequestMetadata.setHeaders(httpHeaders);
-            Http1Request http1Request = new DefaultHttp1Request(http1RequestMetadata, new SimpleHttpInputMessage(new ByteBufInputStream(fullHttpRequest.content(), true)));
+            Http1Request http1Request = new DefaultHttp1Request(http1RequestMetadata, new Http1InputMessage(new ByteBufInputStream(fullHttpRequest.content(), true)));
             super.channelRead(ctx, http1Request);
             return;
         }

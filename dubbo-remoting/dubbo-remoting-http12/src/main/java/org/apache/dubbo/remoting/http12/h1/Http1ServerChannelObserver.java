@@ -23,7 +23,6 @@ import org.apache.dubbo.remoting.http12.HttpHeaderNames;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
 import org.apache.dubbo.remoting.http12.HttpMetadata;
 import org.apache.dubbo.remoting.http12.HttpOutputMessage;
-import org.apache.dubbo.remoting.http12.SimpleHttpMetadata;
 
 public class Http1ServerChannelObserver extends AbstractServerHttpChannelObserver implements HttpChannelObserver<Object> {
 
@@ -35,7 +34,7 @@ public class Http1ServerChannelObserver extends AbstractServerHttpChannelObserve
     protected HttpMetadata encodeHttpMetadata() {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.set(HttpHeaderNames.TRANSFER_ENCODING.getName(), "chunked");
-        return new SimpleHttpMetadata(httpHeaders);
+        return new Http1Metadata(httpHeaders);
     }
 
     @Override
