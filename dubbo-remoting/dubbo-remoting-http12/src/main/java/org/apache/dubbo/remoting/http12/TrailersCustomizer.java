@@ -14,20 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12.h2;
+package org.apache.dubbo.remoting.http12;
 
-import org.apache.dubbo.remoting.http12.HttpChannel;
+import java.util.function.BiConsumer;
 
-import java.util.concurrent.CompletableFuture;
+@FunctionalInterface
+public interface TrailersCustomizer extends BiConsumer<HttpHeaders, Throwable>, HeadersCustomizer {
 
-public interface H2StreamChannel extends HttpChannel {
-
-    CompletableFuture<Void> writeResetFrame(long errorCode);
+    TrailersCustomizer NO_OP = (headers, throwable) -> {
+    };
 
     @Override
-    default Http2OutputMessage newOutputMessage() {
-        return this.newOutputMessage(false);
+    default void accept(HttpHeaders headers) {
+        this.accept(headers, null);
     }
-
-    Http2OutputMessage newOutputMessage(boolean endStream);
 }

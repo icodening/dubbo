@@ -20,7 +20,6 @@ package org.apache.dubbo.remoting.http12.netty4.h2;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.handler.codec.http2.DefaultHttp2ResetFrame;
-import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
 import org.apache.dubbo.remoting.http12.HttpMetadata;
 import org.apache.dubbo.remoting.http12.HttpOutputMessage;
@@ -76,14 +75,4 @@ public class NettyH2StreamChannel implements H2StreamChannel {
         http2StreamChannel.writeAndFlush(resetFrame).addListener(nettyHttpChannelFutureListener);
         return nettyHttpChannelFutureListener;
     }
-
-    @Override
-    public void cancelByLocal(long code) {
-        //send reset frame
-        Http2ResetFrame resetFrame = new DefaultHttp2ResetFrame(code);
-        NettyHttpChannelFutureListener nettyHttpChannelFutureListener = new NettyHttpChannelFutureListener();
-        http2StreamChannel.writeAndFlush(resetFrame).addListener(nettyHttpChannelFutureListener);
-    }
-
-
 }

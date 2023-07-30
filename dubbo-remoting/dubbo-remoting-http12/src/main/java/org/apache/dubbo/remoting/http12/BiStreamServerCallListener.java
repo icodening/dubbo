@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.dubbo.remoting.http12.h2;
+package org.apache.dubbo.remoting.http12;
 
 import org.apache.dubbo.common.stream.StreamObserver;
 import org.apache.dubbo.remoting.http12.AbstractServerCallListener;
+import org.apache.dubbo.remoting.http12.FlowControlStreamObserver;
 import org.apache.dubbo.remoting.http12.exception.HttpStatusException;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcInvocation;
@@ -29,7 +30,7 @@ public class BiStreamServerCallListener extends AbstractServerCallListener {
 
     public BiStreamServerCallListener(RpcInvocation invocation,
                                       Invoker<?> invoker,
-                                      StreamObserver<Object> responseObserver) {
+                                      FlowControlStreamObserver<Object> responseObserver) {
         super(invocation, invoker, responseObserver);
         invocation.setArguments(new Object[]{responseObserver});
         invoke();
@@ -47,6 +48,9 @@ public class BiStreamServerCallListener extends AbstractServerCallListener {
             message = ((Object[]) message)[0];
         }
         requestObserver.onNext(message);
+        if (((FlowControlStreamObserver<Object>) responseObserver).isAutoRequestN()) {
+            ((FlowControlStreamObserver<Object>) responseObserver).request(1);
+        }
     }
 
     @Override

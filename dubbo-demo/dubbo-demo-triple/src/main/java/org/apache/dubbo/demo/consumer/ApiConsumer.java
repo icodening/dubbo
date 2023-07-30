@@ -24,6 +24,7 @@ import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.config.bootstrap.DubboBootstrap;
 import org.apache.dubbo.demo.GreeterService;
+import org.apache.dubbo.demo.User;
 import org.apache.dubbo.demo.hello.GrpcGreeter;
 import org.apache.dubbo.demo.hello.HelloReply;
 import org.apache.dubbo.demo.hello.HelloRequest;
@@ -73,16 +74,16 @@ public class ApiConsumer {
     private static void doWrapper(GreeterService greeterService) {
         HelloRequest unary = HelloRequest.newBuilder().setName("greeterService unary").build();
         System.out.println(greeterService.sayHello(unary));
-
-        greeterService.serverStream("greeterService server-stream", new StreamObserver<String>() {
+//
+        greeterService.serverStream("greeterService server-stream", new StreamObserver<User>() {
             @Override
-            public void onNext(String data) {
+            public void onNext(User data) {
                 System.out.println(data);
             }
 
             @Override
             public void onError(Throwable throwable) {
-
+                throwable.printStackTrace();
             }
 
             @Override

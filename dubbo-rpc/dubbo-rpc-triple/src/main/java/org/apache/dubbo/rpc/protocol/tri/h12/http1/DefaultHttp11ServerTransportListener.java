@@ -19,17 +19,19 @@ package org.apache.dubbo.rpc.protocol.tri.h12.http1;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.stream.StreamObserver;
 import org.apache.dubbo.remoting.http12.HttpChannel;
+import org.apache.dubbo.remoting.http12.HttpHeaderNames;
 import org.apache.dubbo.remoting.http12.HttpInputMessage;
 import org.apache.dubbo.remoting.http12.RequestMetadata;
 import org.apache.dubbo.remoting.http12.ServerCallListener;
 import org.apache.dubbo.remoting.http12.ServerStreamServerCallListener;
 import org.apache.dubbo.remoting.http12.UnaryServerCallListener;
-import org.apache.dubbo.remoting.http12.h1.Http1ChannelObserver;
+import org.apache.dubbo.remoting.http12.h1.Http1ServerChannelObserver;
 import org.apache.dubbo.remoting.http12.h1.Http1ServerStreamChannelObserver;
 import org.apache.dubbo.remoting.http12.h1.Http1ServerTransportListener;
 import org.apache.dubbo.remoting.http12.message.DefaultListeningDecoder;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
 import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
+import org.apache.dubbo.remoting.http12.message.MediaType;
 import org.apache.dubbo.rpc.Invoker;
 import org.apache.dubbo.rpc.RpcInvocation;
 import org.apache.dubbo.rpc.model.FrameworkModel;
@@ -53,10 +55,13 @@ public class DefaultHttp11ServerTransportListener extends AbstractServerTranspor
                                              Invoker<?> invoker) {
         switch (methodDescriptor.getRpcType()) {
             case UNARY:
-                Http1ChannelObserver http1ChannelObserver = new Http1ChannelObserver(httpChannel, getHttpMessageCodec());
+                Http1ServerChannelObserver http1ChannelObserver = new Http1ServerChannelObserver(httpChannel);
+                http1ChannelObserver.setHttpMessageCodec(getHttpMessageCodec());
                 return new AutoCompleteUnaryServerCallListener(invocation, invoker, http1ChannelObserver);
             case SERVER_STREAM:
-                Http1ChannelObserver serverStreamChannelObserver = new Http1ServerStreamChannelObserver(httpChannel, getHttpMessageCodec());
+                Http1ServerChannelObserver serverStreamChannelObserver = new Http1ServerStreamChannelObserver(httpChannel);
+                serverStreamChannelObserver.setHttpMessageCodec(getHttpMessageCodec());
+                serverStreamChannelObserver.setHeadersCustomizer((headers)->headers.set(HttpHeaderNames.CONTENT_TYPE.getName(), MediaType.TEXT_EVENT_STREAM_VALUE.getName()));
                 return new AutoCompleteServerStreamServerCallListener(invocation, invoker, serverStreamChannelObserver);
             default:
                 throw new UnsupportedOperationException("HTTP1.x only support unary and server-stream");

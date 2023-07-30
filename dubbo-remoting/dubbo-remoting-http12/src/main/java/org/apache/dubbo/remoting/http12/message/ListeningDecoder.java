@@ -26,8 +26,6 @@ public interface ListeningDecoder {
 
     void close();
 
-    HttpMessageCodec getHttpMessageCodec();
-
     void setListener(Listener listener);
 
     interface Listener {

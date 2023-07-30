@@ -36,7 +36,7 @@ public interface GreeterService {
 
     CompletableFuture<String> sayHelloAsync2(String request, User user);
 
-    void serverStream(String request, StreamObserver<String> responseObserver);
+    void serverStream(String request, StreamObserver<User> responseObserver);
 
     StreamObserver<String> biStream(StreamObserver<String> responseObserver);
 }

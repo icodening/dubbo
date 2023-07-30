@@ -57,7 +57,7 @@ public class NettyHttp1Codec extends ChannelDuplexHandler {
                 httpHeaders.set(key, header.getValue());
             }
             http1RequestMetadata.setHeaders(httpHeaders);
-            Http1Request http1Request = new DefaultHttp1Request(http1RequestMetadata, new SimpleHttpInputMessage(new ByteBufInputStream(fullHttpRequest.content())));
+            Http1Request http1Request = new DefaultHttp1Request(http1RequestMetadata, new SimpleHttpInputMessage(new ByteBufInputStream(fullHttpRequest.content(), true)));
             super.channelRead(ctx, http1Request);
             return;
         }

@@ -46,9 +46,4 @@ public class DefaultListeningDecoder implements ListeningDecoder {
     public void close() {
         this.listener.onClose();
     }
-
-    @Override
-    public HttpMessageCodec getHttpMessageCodec() {
-        return httpMessageCodec;
-    }
 }

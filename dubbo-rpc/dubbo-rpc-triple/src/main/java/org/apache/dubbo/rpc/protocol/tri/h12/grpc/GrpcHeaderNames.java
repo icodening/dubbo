@@ -20,6 +20,7 @@ public enum GrpcHeaderNames {
 
     GRPC_STATUS("grpc-status"),
     GRPC_MESSAGE("grpc-message"),
+    GRPC_ENCODING("grpc-encoding"),
     ;
 
     private final String name;

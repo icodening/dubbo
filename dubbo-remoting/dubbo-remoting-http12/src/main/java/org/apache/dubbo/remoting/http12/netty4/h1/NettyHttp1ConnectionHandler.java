@@ -21,8 +21,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.threadpool.ThreadPool;
 import org.apache.dubbo.common.utils.Assert;
-import org.apache.dubbo.remoting.http12.h1.Http1ChannelObserver;
 import org.apache.dubbo.remoting.http12.h1.Http1Request;
+import org.apache.dubbo.remoting.http12.h1.Http1ServerChannelObserver;
 import org.apache.dubbo.remoting.http12.h1.Http1ServerTransportListener;
 import org.apache.dubbo.remoting.http12.h1.Http1ServerTransportListenerFactory;
 import org.apache.dubbo.remoting.http12.message.JsonCodec;
@@ -42,7 +42,7 @@ public class NettyHttp1ConnectionHandler extends SimpleChannelInboundHandler<Htt
 
     private final Executor executor;
 
-    private Http1ChannelObserver errorResponseObserver;
+    private Http1ServerChannelObserver errorResponseObserver;
 
     public NettyHttp1ConnectionHandler(URL url, FrameworkModel frameworkModel) {
         this.url = url;
@@ -82,6 +82,7 @@ public class NettyHttp1ConnectionHandler extends SimpleChannelInboundHandler<Htt
             Assert.notNull(http1ServerTransportListenerFactory, "http1ServerTransportListenerFactory must be not null.");
             http1TransportListener = http1ServerTransportListenerFactory.newInstance(new NettyHttp1Channel(ctx.channel()), url, frameworkModel);
         }
-        this.errorResponseObserver = new Http1ChannelObserver(new NettyHttp1Channel(ctx.channel()), JsonCodec.INSTANCE);
+        this.errorResponseObserver = new Http1ServerChannelObserver(new NettyHttp1Channel(ctx.channel()));
+        this.errorResponseObserver.setHttpMessageCodec(JsonCodec.INSTANCE);
     }
 }

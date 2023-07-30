@@ -14,24 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.dubbo.remoting.http12.message;
 
-package org.apache.dubbo.remoting.http12.h2;
+public interface StreamingDecoder extends ListeningDecoder {
 
-import org.apache.dubbo.rpc.CancellationContext;
+    void request(int numMessages);
 
-public abstract class AbstractCancelableStreamObserver<T> implements Http2CancelableStreamObserver<T> {
-
-    private CancellationContext cancellationContext;
-
-    public void setCancellationContext(CancellationContext cancellationContext) {
-        this.cancellationContext = cancellationContext;
-    }
-
-    public CancellationContext getCancellationContext() {
-        return cancellationContext;
-    }
-
-    public void cancel(Throwable throwable) {
-        cancellationContext.cancel(throwable);
-    }
 }

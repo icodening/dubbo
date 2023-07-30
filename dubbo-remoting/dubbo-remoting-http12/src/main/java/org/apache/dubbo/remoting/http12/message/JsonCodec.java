@@ -18,11 +18,9 @@ package org.apache.dubbo.remoting.http12.message;
 
 import com.alibaba.fastjson2.JSONObject;
 import org.apache.dubbo.common.utils.JsonUtils;
-import org.apache.dubbo.remoting.http12.CompositeInputStream;
 import org.apache.dubbo.remoting.http12.exception.DecodeException;
 import org.apache.dubbo.remoting.http12.exception.EncodeException;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -51,14 +49,23 @@ public class JsonCodec implements HttpMessageCodec {
             } finally {
                 outputStream.flush();
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             throw new EncodeException(e);
         }
     }
 
     @Override
     public void encode(OutputStream outputStream, Object[] data) throws EncodeException {
-
+        try {
+            try {
+                String jsonString = JsonUtils.toJson(data);
+                outputStream.write(jsonString.getBytes(StandardCharsets.UTF_8));
+            } finally {
+                outputStream.flush();
+            }
+        } catch (Throwable e) {
+            throw new EncodeException(e);
+        }
     }
 
     @Override
@@ -75,7 +82,7 @@ public class JsonCodec implements HttpMessageCodec {
             } finally {
                 body.close();
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             throw new DecodeException(e);
         }
     }
@@ -111,7 +118,7 @@ public class JsonCodec implements HttpMessageCodec {
             } finally {
                 dataInputStream.close();
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             throw new DecodeException(e);
         }
     }

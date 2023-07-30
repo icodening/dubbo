@@ -14,20 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12.h2;
+package org.apache.dubbo.remoting.http12;
 
-import org.apache.dubbo.remoting.http12.HttpChannel;
+public interface CustomizableHttpChannelObserver<T> extends HttpChannelObserver<T> {
 
-import java.util.concurrent.CompletableFuture;
+    void setHeadersCustomizer(HeadersCustomizer headersCustomizer);
 
-public interface H2StreamChannel extends HttpChannel {
+    void setTrailersCustomizer(TrailersCustomizer trailersCustomizer);
 
-    CompletableFuture<Void> writeResetFrame(long errorCode);
+    void setErrorResponseCustomizer(ErrorResponseCustomizer errorResponseCustomizer);
 
-    @Override
-    default Http2OutputMessage newOutputMessage() {
-        return this.newOutputMessage(false);
-    }
-
-    Http2OutputMessage newOutputMessage(boolean endStream);
 }

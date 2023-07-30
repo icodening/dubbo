@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12.h2;
+package org.apache.dubbo.remoting.http12.message;
 
 import org.apache.dubbo.remoting.http12.CompositeInputStream;
 import org.apache.dubbo.remoting.http12.exception.DecodeException;
-import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
-import org.apache.dubbo.remoting.http12.message.ListeningDecoder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class Http2LengthFieldStreamingDecoder implements ListeningDecoder {
+public class LengthFieldStreamingDecoder implements StreamingDecoder {
 
     private long pendingDeliveries;
 
@@ -51,15 +49,15 @@ public class Http2LengthFieldStreamingDecoder implements ListeningDecoder {
 
     private int requiredLength;
 
-    public Http2LengthFieldStreamingDecoder(Class<?>[] targetTypes) {
+    public LengthFieldStreamingDecoder(Class<?>[] targetTypes) {
         this(4, targetTypes);
     }
 
-    public Http2LengthFieldStreamingDecoder(int lengthFieldLength, Class<?>[] targetTypes) {
+    public LengthFieldStreamingDecoder(int lengthFieldLength, Class<?>[] targetTypes) {
         this(0, lengthFieldLength, targetTypes);
     }
 
-    public Http2LengthFieldStreamingDecoder(int lengthFieldOffset, int lengthFieldLength, Class<?>[] targetTypes) {
+    public LengthFieldStreamingDecoder(int lengthFieldOffset, int lengthFieldLength, Class<?>[] targetTypes) {
         this.lengthFieldOffset = lengthFieldOffset;
         this.lengthFieldLength = lengthFieldLength;
         this.targetTypes = targetTypes;
@@ -80,6 +78,7 @@ public class Http2LengthFieldStreamingDecoder implements ListeningDecoder {
         deliver();
     }
 
+    @Override
     public final void request(int numMessages) {
         pendingDeliveries += numMessages;
         deliver();
@@ -89,11 +88,6 @@ public class Http2LengthFieldStreamingDecoder implements ListeningDecoder {
     public final void close() {
         closing = true;
         deliver();
-    }
-
-    @Override
-    public final HttpMessageCodec getHttpMessageCodec() {
-        return httpMessageCodec;
     }
 
     @Override
@@ -164,8 +158,8 @@ public class Http2LengthFieldStreamingDecoder implements ListeningDecoder {
     }
 
     private void processBody() throws IOException {
-        byte[] bytes = readRawMessage(accumulate, requiredLength);
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+        byte[] rawMessage = readRawMessage(accumulate, requiredLength);
+        InputStream inputStream = new ByteArrayInputStream(rawMessage);
         Object[] decodeParameters = httpMessageCodec.decode(inputStream, targetTypes);
         this.listener.onMessage(decodeParameters);
 

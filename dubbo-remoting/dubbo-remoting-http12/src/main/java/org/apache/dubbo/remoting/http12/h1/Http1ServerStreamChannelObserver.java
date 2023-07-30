@@ -17,15 +17,11 @@
 package org.apache.dubbo.remoting.http12.h1;
 
 import org.apache.dubbo.remoting.http12.HttpChannel;
-import org.apache.dubbo.remoting.http12.HttpHeaderNames;
-import org.apache.dubbo.remoting.http12.HttpMetadata;
 import org.apache.dubbo.remoting.http12.HttpOutputMessage;
-import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
-import org.apache.dubbo.remoting.http12.message.MediaType;
 
 import java.io.IOException;
 
-public class Http1ServerStreamChannelObserver extends Http1ChannelObserver {
+public class Http1ServerStreamChannelObserver extends Http1ServerChannelObserver {
 
     private static final String SERVER_SENT_EVENT_DATA_PREFIX = "data:";
     private static final String SERVER_SENT_EVENT_LF = "\n\n";
@@ -37,26 +33,15 @@ public class Http1ServerStreamChannelObserver extends Http1ChannelObserver {
         super(httpChannel);
     }
 
-    public Http1ServerStreamChannelObserver(HttpChannel httpChannel, HttpMessageCodec httpMessageCodec) {
-        super(httpChannel, httpMessageCodec);
-    }
-
     @Override
-    protected HttpMetadata encodeHttpHeaders(Object data) {
-        HttpMetadata httpMetadata = super.encodeHttpHeaders(data);
-        httpMetadata.headers().set(HttpHeaderNames.CONTENT_TYPE.getName(), MediaType.TEXT_EVENT_STREAM_VALUE.getName());
-        return httpMetadata;
-    }
-
-    @Override
-    protected void prepareWriteMessage(HttpOutputMessage httpMessage) throws IOException {
+    protected void preOutputMessage(HttpOutputMessage httpMessage) throws IOException {
         HttpOutputMessage httpOutputMessage = this.getHttpChannel().newOutputMessage();
         httpOutputMessage.getBody().write(SERVER_SENT_EVENT_DATA_PREFIX_BYTES, 0, SERVER_SENT_EVENT_DATA_PREFIX_BYTES.length);
         this.getHttpChannel().writeMessage(httpOutputMessage);
     }
 
     @Override
-    protected void postWriteMessage(HttpOutputMessage httpMessage) throws IOException {
+    protected void postOutputMessage(HttpOutputMessage httpMessage) throws IOException {
         HttpOutputMessage httpOutputMessage = this.getHttpChannel().newOutputMessage();
         httpOutputMessage.getBody().write(SERVER_SENT_EVENT_LF_BYTES, 0, SERVER_SENT_EVENT_LF_BYTES.length);
         this.getHttpChannel().writeMessage(httpOutputMessage);

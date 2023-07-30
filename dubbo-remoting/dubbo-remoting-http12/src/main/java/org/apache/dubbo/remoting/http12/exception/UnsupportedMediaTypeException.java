@@ -21,7 +21,7 @@ public class UnsupportedMediaTypeException extends HttpStatusException {
     private final String mediaType;
 
     public UnsupportedMediaTypeException(String mediaType) {
-        super(415, mediaType);
+        super(415, "Unsupported Media Type '" + mediaType + "'");
         this.mediaType = mediaType;
     }
 

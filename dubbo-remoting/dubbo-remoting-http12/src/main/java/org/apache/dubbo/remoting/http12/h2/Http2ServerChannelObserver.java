@@ -16,100 +16,57 @@
  */
 package org.apache.dubbo.remoting.http12.h2;
 
+import org.apache.dubbo.remoting.http12.AbstractServerHttpChannelObserver;
 import org.apache.dubbo.remoting.http12.ErrorCodeHolder;
-import org.apache.dubbo.remoting.http12.ErrorResponse;
+import org.apache.dubbo.remoting.http12.FlowControlStreamObserver;
 import org.apache.dubbo.remoting.http12.HttpChannelObserver;
 import org.apache.dubbo.remoting.http12.HttpHeaderNames;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
-import org.apache.dubbo.remoting.http12.HttpOutputMessage;
-import org.apache.dubbo.remoting.http12.HttpStatus;
-import org.apache.dubbo.remoting.http12.exception.HttpStatusException;
-import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
+import org.apache.dubbo.remoting.http12.HttpMetadata;
+import org.apache.dubbo.remoting.http12.message.StreamingDecoder;
+import org.apache.dubbo.rpc.CancellationContext;
 
-import java.io.IOException;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+public class Http2ServerChannelObserver extends AbstractServerHttpChannelObserver implements HttpChannelObserver<Object>, FlowControlStreamObserver<Object>, Http2CancelableStreamObserver<Object> {
 
-public class Http2ServerChannelObserver extends AbstractCancelableStreamObserver<Object> implements HttpChannelObserver, Http2CancelableStreamObserver<Object> {
+    private CancellationContext cancellationContext;
 
-    private final H2StreamChannel h2StreamChannel;
+    private StreamingDecoder streamingDecoder;
 
-    private HttpMessageCodec httpMessageCodec;
-
-    private BiConsumer<HttpHeaders, Throwable> trailersCustomizer = ((headers, throwable) -> {
-    });
-
-    private Consumer<HttpHeaders> headersCustomizer = (headers -> {
-    });
-
-    private boolean headerSent;
+    private boolean autoRequestN = true;
 
     public Http2ServerChannelObserver(H2StreamChannel h2StreamChannel) {
-        this.h2StreamChannel = h2StreamChannel;
+        super(h2StreamChannel);
     }
 
-    public void setHttpMessageCodec(HttpMessageCodec httpMessageCodec) {
-        this.httpMessageCodec = httpMessageCodec;
-    }
-
-    public void setTrailersCustomizer(BiConsumer<HttpHeaders, Throwable> trailersCustomizer) {
-        this.trailersCustomizer = trailersCustomizer;
-    }
-
-    public void setHeadersCustomizer(Consumer<HttpHeaders> headersCustomizer) {
-        this.headersCustomizer = headersCustomizer;
+    public void setStreamingDecoder(StreamingDecoder streamingDecoder) {
+        this.streamingDecoder = streamingDecoder;
     }
 
     @Override
-    public void onNext(Object data) {
-        if (!headerSent) {
-            doSendHeaders(HttpStatus.OK.getStatusString());
-        }
-        try {
-            Http2OutputMessage http2OutputMessage = encodeHttp2OutputMessage(data);
-            this.h2StreamChannel.writeMessage(http2OutputMessage);
-        } catch (IOException e) {
-            onError(e);
-        }
-    }
-
-    @Override
-    public void onError(Throwable throwable) {
-        int statusCode = 500;
-        if (throwable instanceof HttpStatusException) {
-            statusCode = ((HttpStatusException) throwable).getStatusCode();
-        }
-        if (!headerSent) {
-            doSendHeaders(String.valueOf(statusCode));
-        }
-        try {
-            HttpOutputMessage httpOutputMessage = this.h2StreamChannel.newOutputMessage();
-            ErrorResponse errorResponse = new ErrorResponse();
-            errorResponse.setStatus(String.valueOf(statusCode));
-            errorResponse.setMessage(throwable.getMessage());
-            this.httpMessageCodec.encode(httpOutputMessage.getBody(), errorResponse);
-            getHttpChannel().writeMessage(httpOutputMessage);
-        } finally {
-            internalCompleted(throwable);
-        }
-    }
-
-    @Override
-    public void onCompleted() {
-        //trailer
-        internalCompleted(null);
-    }
-
-    private void internalCompleted(Throwable throwable) {
+    protected HttpMetadata encodeHttpMetadata() {
         HttpHeaders httpHeaders = new HttpHeaders();
-        this.trailersCustomizer.accept(httpHeaders, throwable);
-        Http2Header http2Header = new Http2MetadataFrame(httpHeaders, true);
-        this.h2StreamChannel.writeHeader(http2Header);
+        httpHeaders.set(HttpHeaderNames.TE.getName(), "trailers");
+        return new Http2MetadataFrame(httpHeaders);
+    }
+
+    @Override
+    protected HttpMetadata encodeTrailers(Throwable throwable) {
+        return new Http2MetadataFrame(new HttpHeaders(), true);
     }
 
     @Override
     public H2StreamChannel getHttpChannel() {
-        return this.h2StreamChannel;
+        return (H2StreamChannel) super.getHttpChannel();
+    }
+
+    @Override
+    public void setCancellationContext(CancellationContext cancellationContext) {
+        this.cancellationContext = cancellationContext;
+    }
+
+    @Override
+    public CancellationContext getCancellationContext() {
+        return cancellationContext;
     }
 
     @Override
@@ -118,27 +75,22 @@ public class Http2ServerChannelObserver extends AbstractCancelableStreamObserver
         if (throwable instanceof ErrorCodeHolder) {
             errorCode = ((ErrorCodeHolder) throwable).getErrorCode();
         }
-        h2StreamChannel.writeResetFrame(errorCode);
-        super.cancel(throwable);
+        getHttpChannel().writeResetFrame(errorCode);
+        this.cancellationContext.cancel(throwable);
     }
 
-    private void doSendHeaders(String statusCode) {
-        sendHeaders(new HttpHeaders(), statusCode);
-        this.headerSent = true;
+    @Override
+    public void request(int count) {
+        this.streamingDecoder.request(count);
     }
 
-    protected Http2OutputMessage encodeHttp2OutputMessage(Object data) throws IOException {
-        Http2OutputMessage http2OutputMessage = this.h2StreamChannel.newOutputMessage(false);
-        this.httpMessageCodec.encode(http2OutputMessage.getBody(), data);
-        return http2OutputMessage;
+    @Override
+    public void disableAutoFlowControl() {
+        this.autoRequestN = false;
     }
 
-    protected void sendHeaders(HttpHeaders httpHeaders, String status) {
-        httpHeaders.set(Http2Headers.STATUS.getName(), status);
-        httpHeaders.set(HttpHeaderNames.CONTENT_TYPE.getName(), httpMessageCodec.contentType().getName());
-        httpHeaders.set(HttpHeaderNames.TE.getName(), "trailers");
-        this.headersCustomizer.accept(httpHeaders);
-        Http2Header http2Header = new Http2MetadataFrame(httpHeaders, false);
-        this.h2StreamChannel.writeHeader(http2Header);
+    @Override
+    public boolean isAutoRequestN() {
+        return autoRequestN;
     }
 }

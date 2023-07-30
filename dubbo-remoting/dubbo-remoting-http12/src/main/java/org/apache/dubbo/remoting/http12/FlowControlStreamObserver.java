@@ -14,29 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
+package org.apache.dubbo.remoting.http12;
 
 import org.apache.dubbo.common.stream.StreamObserver;
-import org.apache.dubbo.remoting.http12.h2.BiStreamServerCallListener;
-import org.apache.dubbo.rpc.Invoker;
-import org.apache.dubbo.rpc.RpcInvocation;
 
-public class GrpcBiStreamServerCallListener extends BiStreamServerCallListener {
+public interface FlowControlStreamObserver<T> extends StreamObserver<T> {
 
-    private GrpcStreamingDecoder grpcStreamingDecoder;
+    /**
+     * Requests the peer to produce {@code count} more messages to be delivered to the 'inbound'
+     * {@link StreamObserver}.
+     *
+     * <p>This method is safe to call from multiple threads without external synchronization.
+     *
+     * @param count more messages
+     */
+    void request(int count);
 
-    public GrpcBiStreamServerCallListener(RpcInvocation invocation, Invoker<?> invoker, StreamObserver<Object> responseObserver) {
-        super(invocation, invoker, responseObserver);
-    }
+    boolean isAutoRequestN();
 
-    public void setGrpcListeningDecoder(GrpcStreamingDecoder grpcStreamingDecoder) {
-        this.grpcStreamingDecoder = grpcStreamingDecoder;
-    }
+    /**
+     * Swaps to manual flow control where no message will be delivered to {@link
+     * StreamObserver#onNext(Object)} unless it is {@link #request request()}ed. Since {@code
+     * request()} may not be called before the call is started, a number of initial requests may be
+     * specified.
+     */
+    void disableAutoFlowControl();
 
-    @Override
-    public void onMessage(Object message) {
-        super.onMessage(message);
-        //AUTO
-        this.grpcStreamingDecoder.request(1);
-    }
 }

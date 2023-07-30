@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.remoting.http12.h2;
+package org.apache.dubbo.remoting.http12;
 
-import org.apache.dubbo.remoting.http12.HttpChannel;
+import java.util.function.BiConsumer;
 
-public interface CancelableStreamChannel extends HttpChannel {
+@FunctionalInterface
+public interface ErrorResponseCustomizer extends BiConsumer<ErrorResponse, Throwable> {
 
-    void cancelByLocal(long code);
-
+    ErrorResponseCustomizer NO_OP = (errorResponse, throwable) -> {
+    };
 }

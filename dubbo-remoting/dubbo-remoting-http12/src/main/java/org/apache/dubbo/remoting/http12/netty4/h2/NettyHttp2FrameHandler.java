@@ -74,7 +74,7 @@ public class NettyHttp2FrameHandler extends ChannelDuplexHandler {
             statusCode = ((HttpStatusException) cause).getStatusCode();
         }
         H2StreamChannel h2StreamChannel = transportListener.getHttpChannel();
-        h2StreamChannel.cancelByLocal(statusCode);
+        h2StreamChannel.writeResetFrame(statusCode);
     }
 
 }

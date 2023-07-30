@@ -16,14 +16,14 @@
  */
 package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 
-import org.apache.dubbo.remoting.http12.h2.Http2LengthFieldStreamingDecoder;
+import org.apache.dubbo.remoting.http12.message.LengthFieldStreamingDecoder;
 import org.apache.dubbo.rpc.RpcException;
 import org.apache.dubbo.rpc.protocol.tri.compressor.DeCompressor;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-public class GrpcStreamingDecoder extends Http2LengthFieldStreamingDecoder {
+public class GrpcStreamingDecoder extends LengthFieldStreamingDecoder {
 
     private static final int COMPRESSED_FLAG_MASK = 1;
     private static final int RESERVED_MASK = 0xFE;

@@ -22,8 +22,10 @@ import org.apache.dubbo.common.utils.CollectionUtils;
 import org.apache.dubbo.remoting.http12.HttpHeaderNames;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
 import org.apache.dubbo.remoting.http12.HttpInputMessage;
+import org.apache.dubbo.remoting.http12.HttpStatus;
 import org.apache.dubbo.remoting.http12.HttpTransportListener;
 import org.apache.dubbo.remoting.http12.RequestMetadata;
+import org.apache.dubbo.remoting.http12.exception.HttpStatusException;
 import org.apache.dubbo.remoting.http12.exception.IllegalPathException;
 import org.apache.dubbo.remoting.http12.exception.UnimplementedException;
 import org.apache.dubbo.remoting.http12.exception.UnsupportedMediaTypeException;
@@ -43,6 +45,7 @@ import org.apache.dubbo.rpc.service.ServiceDescriptorInternalCache;
 import org.apache.dubbo.rpc.stub.StubSuppliers;
 
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -82,11 +85,27 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
 
     @Override
     public void onMetadata(HEADER metadata) {
-        this.executor = initializeExecutor(metadata);
-        executor.execute(() -> doOnMetadata(metadata));
+        try {
+            this.executor = initializeExecutor(metadata);
+        } catch (Throwable throwable) {
+            onError(throwable);
+            return;
+        }
+        if (this.executor == null) {
+            onError(new NullPointerException("initializeExecutor return null"));
+            return;
+        }
+        executor.execute(() -> {
+            try {
+                doOnMetadata(metadata);
+            } catch (Throwable throwable) {
+                onError(throwable);
+            }
+        });
     }
 
     protected void doOnMetadata(HEADER metadata) {
+        onPrepareMetadata(metadata);
         this.httpMetadata = metadata;
         String path = metadata.path();
         HttpHeaders headers = metadata.headers();
@@ -123,22 +142,53 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
 
     @Override
     public void onData(MESSAGE message) {
-        this.executor.execute(() -> doOnData(message));
+        this.executor.execute(() -> {
+            try {
+                doOnData(message);
+            } catch (Throwable e) {
+                onError(e);
+            }
+        });
     }
 
     protected void doOnData(MESSAGE message) {
         //decode message
+        onPrepareData(message);
         InputStream body = message.getBody();
         this.listeningDecoder.decode(body);
         onDataCompletion(message);
+    }
+
+    protected void onPrepareMetadata(HEADER header) {
+        //default no op
     }
 
     protected void onMetadataCompletion(HEADER metadata) {
         //default no op
     }
 
+    protected void onPrepareData(MESSAGE message) {
+        //default no op
+    }
+
     protected void onDataCompletion(MESSAGE message) {
         //default no op
+    }
+
+    protected void onError(Throwable throwable) {
+        //default rethrow
+        if (throwable instanceof RuntimeException) {
+            throw ((RuntimeException) throwable);
+        }
+        if (throwable instanceof InvocationTargetException) {
+            Throwable targetException = ((InvocationTargetException) throwable).getTargetException();
+            if (targetException instanceof RuntimeException) {
+                throw (RuntimeException) targetException;
+            } else if (targetException instanceof Error) {
+                throw (Error) targetException;
+            }
+        }
+        throw new HttpStatusException(HttpStatus.INTERNAL_SERVER_ERROR.getCode(), throwable);
     }
 
     protected abstract ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes);

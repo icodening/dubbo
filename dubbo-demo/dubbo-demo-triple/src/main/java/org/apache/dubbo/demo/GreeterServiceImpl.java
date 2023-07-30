@@ -48,14 +48,16 @@ public class GreeterServiceImpl implements GreeterService {
     }
 
     @Override
-    public void serverStream(String request, StreamObserver<String> responseObserver) {
+    public void serverStream(String request, StreamObserver<User> responseObserver) {
         for (int i = 0; i < 5; i++) {
             try {
                 Thread.sleep(200);
             } catch (InterruptedException e) {
 
             }
-            responseObserver.onNext(request);
+            User user = new User();
+            user.setName(request + " " + i);
+            responseObserver.onNext(user);
         }
         responseObserver.onCompleted();
     }
@@ -70,7 +72,7 @@ public class GreeterServiceImpl implements GreeterService {
 
             @Override
             public void onError(Throwable throwable) {
-                System.out.println("收到错误信息:"+throwable.getMessage());
+                System.out.println("收到错误信息:" + throwable.getMessage());
 
             }
 

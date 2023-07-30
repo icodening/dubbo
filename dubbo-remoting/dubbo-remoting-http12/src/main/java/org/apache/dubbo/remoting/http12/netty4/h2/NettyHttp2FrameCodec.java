@@ -36,7 +36,6 @@ import org.apache.dubbo.remoting.http12.h2.Http2MetadataFrame;
 import org.apache.dubbo.remoting.http12.h2.Http2OutputMessage;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +82,7 @@ public class NettyHttp2FrameCodec extends ChannelDuplexHandler {
 
     private Http2InputMessage onHttp2DataFrame(Http2DataFrame dataFrame) {
         ByteBuf content = dataFrame.content();
-        Http2InputMessageFrame message = new Http2InputMessageFrame(new ByteBufInputStream(content), dataFrame.isEndStream());
+        Http2InputMessageFrame message = new Http2InputMessageFrame(new ByteBufInputStream(content, true), dataFrame.isEndStream());
         message.setId(dataFrame.stream().id());
         return message;
     }
@@ -97,20 +96,6 @@ public class NettyHttp2FrameCodec extends ChannelDuplexHandler {
             http2Headers.set(name, value);
         }
         return new DefaultHttp2HeadersFrame(http2Headers, http2Header.isEndStream());
-    }
-
-    private Http2DataFrame encodeHttp2DataFrame(ChannelHandlerContext ctx, Http2InputMessage http2Message) throws IOException {
-        InputStream body = http2Message.getBody();
-        if (body == null) {
-            return new DefaultHttp2DataFrame(http2Message.isEndStream());
-        }
-        ByteBuf buffer = ctx.alloc().buffer(body.available());
-        byte[] data = new byte[4096];
-        int len;
-        while ((len = body.read(data)) != -1) {
-            buffer.writeBytes(data, 0, len);
-        }
-        return new DefaultHttp2DataFrame(buffer, http2Message.isEndStream());
     }
 
     private Http2DataFrame encodeHttp2DataFrame(ChannelHandlerContext ctx, Http2OutputMessage outputMessage) throws IOException {
