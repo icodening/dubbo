@@ -19,6 +19,7 @@ package org.apache.dubbo.rpc.protocol.tri.h12;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.common.constants.CommonConstants;
 import org.apache.dubbo.common.utils.CollectionUtils;
+import org.apache.dubbo.remoting.http12.HttpChannel;
 import org.apache.dubbo.remoting.http12.HttpHeaderNames;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
 import org.apache.dubbo.remoting.http12.HttpInputMessage;
@@ -55,6 +56,8 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
 
     private final FrameworkModel frameworkModel;
 
+    private final HttpChannel httpChannel;
+
     private HttpMessageCodec httpMessageCodec;
 
     private Invoker<?> invoker;
@@ -73,8 +76,9 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
 
     private Executor executor;
 
-    public AbstractServerTransportListener(FrameworkModel frameworkModel) {
+    public AbstractServerTransportListener(FrameworkModel frameworkModel, HttpChannel httpChannel) {
         this.frameworkModel = frameworkModel;
+        this.httpChannel = httpChannel;
         this.pathResolver = frameworkModel.getExtensionLoader(PathResolver.class).getDefaultExtension();
     }
 
@@ -260,6 +264,17 @@ public abstract class AbstractServerTransportListener<HEADER extends RequestMeta
             new Object[0]);
         inv.setTargetServiceUniqueName(url.getServiceKey());
         inv.setReturnTypes(methodDescriptor.getReturnTypes());
+        //TODO header to attachment
+//        Map<String, String> headers = getHttpMetadata().headers().toSingleValueMap();
+//        Map<String, Object> requestMetadata = headersToMap(headers, () -> {
+//            return Optional.ofNullable(headers.get(TripleHeaderEnum.TRI_HEADER_CONVERT.getHeader()))
+//                .map(CharSequence::toString)
+//                .orElse(null);
+//        });
+//        inv.setObjectAttachments(StreamUtils.toAttachments(requestMetadata));
+
+        inv.put("tri.remote.address", httpChannel.remoteAddress());
+        //customizer RpcInvocation
         //        headerFilters.forEach(f -> f.invoke(invoker, invocation));
         return inv;
     }

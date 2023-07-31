@@ -100,7 +100,7 @@ public abstract class AbstractServerHttpChannelObserver implements CustomizableH
 
     @Override
     public void onError(Throwable throwable) {
-        int httpStatusCode = 500;
+        int httpStatusCode = HttpStatus.INTERNAL_SERVER_ERROR.getCode();
         if (throwable instanceof HttpStatusException) {
             httpStatusCode = ((HttpStatusException) throwable).getStatusCode();
         }

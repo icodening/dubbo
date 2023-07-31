@@ -45,7 +45,7 @@ public class DefaultHttp11ServerTransportListener extends AbstractServerTranspor
     private final URL url;
 
     public DefaultHttp11ServerTransportListener(HttpChannel httpChannel, URL url, FrameworkModel frameworkModel) {
-        super(frameworkModel);
+        super(frameworkModel, httpChannel);
         this.url = url;
         this.httpChannel = httpChannel;
     }

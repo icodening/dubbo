@@ -14,23 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
+package org.apache.dubbo.remoting.http12.exception;
 
-public enum GrpcHeaderNames {
+public class HttpRequestTimeout extends HttpStatusException {
 
-    GRPC_STATUS("grpc-status"),
-    GRPC_MESSAGE("grpc-message"),
-    GRPC_ENCODING("grpc-encoding"),
-    GRPC_TIMEOUT("grpc-timeout"),
-    ;
+    private final String side;
 
-    private final String name;
-
-    GrpcHeaderNames(String name) {
-        this.name = name;
+    private HttpRequestTimeout(String side) {
+        super(408);
+        this.side = side;
     }
 
-    public String getName() {
-        return name;
+    public String getSide() {
+        return side;
     }
+
+    public static HttpRequestTimeout serverSide(){
+        return new HttpRequestTimeout("server");
+    }
+
+    public static HttpRequestTimeout clientSide(){
+        return new HttpRequestTimeout("client");
+    }
+
 }

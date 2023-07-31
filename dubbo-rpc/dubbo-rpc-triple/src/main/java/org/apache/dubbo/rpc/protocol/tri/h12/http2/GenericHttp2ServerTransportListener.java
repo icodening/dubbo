@@ -55,7 +55,7 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
     private ServerCallListener serverCallListener;
 
     public GenericHttp2ServerTransportListener(H2StreamChannel h2StreamChannel, URL url, FrameworkModel frameworkModel) {
-        super(frameworkModel);
+        super(frameworkModel, h2StreamChannel);
         this.h2StreamChannel = h2StreamChannel;
         this.serverChannelObserver = new Http2ServerChannelObserver(h2StreamChannel);
         this.serverChannelObserver.setHttpMessageCodec(JsonCodec.INSTANCE);

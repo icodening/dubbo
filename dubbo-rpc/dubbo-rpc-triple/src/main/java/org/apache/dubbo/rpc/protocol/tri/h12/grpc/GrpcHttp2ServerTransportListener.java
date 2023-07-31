@@ -17,6 +17,8 @@
 package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 
 import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.logger.ErrorTypeAwareLogger;
+import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.remoting.http12.HttpHeaders;
 import org.apache.dubbo.remoting.http12.exception.UnimplementedException;
 import org.apache.dubbo.remoting.http12.h2.H2StreamChannel;
@@ -24,12 +26,23 @@ import org.apache.dubbo.remoting.http12.h2.Http2Header;
 import org.apache.dubbo.remoting.http12.h2.Http2TransportListener;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
 import org.apache.dubbo.remoting.http12.message.StreamingDecoder;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.RpcInvocation;
 import org.apache.dubbo.rpc.model.FrameworkModel;
+import org.apache.dubbo.rpc.model.MethodDescriptor;
+import org.apache.dubbo.rpc.model.ServiceDescriptor;
+import org.apache.dubbo.rpc.protocol.tri.call.AbstractServerCall;
 import org.apache.dubbo.rpc.protocol.tri.compressor.DeCompressor;
 import org.apache.dubbo.rpc.protocol.tri.compressor.Identity;
 import org.apache.dubbo.rpc.protocol.tri.h12.http2.GenericHttp2ServerTransportListener;
 
+import java.util.Objects;
+
+import static org.apache.dubbo.common.constants.LoggerCodeConstants.PROTOCOL_FAILED_PARSE;
+
 public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTransportListener implements Http2TransportListener {
+
+    private static final ErrorTypeAwareLogger LOGGER = LoggerFactory.getErrorTypeAwareLogger(AbstractServerCall.class);
 
     public GrpcHttp2ServerTransportListener(H2StreamChannel h2StreamChannel, URL url, FrameworkModel frameworkModel) {
         super(h2StreamChannel, url, frameworkModel);
@@ -45,6 +58,23 @@ public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTranspor
         if (throwable != null) {
             httpHeaders.set(GrpcHeaderNames.GRPC_MESSAGE.getName(), throwable.getMessage());
         }
+    }
+
+    @Override
+    protected RpcInvocation buildRpcInvocation(Invoker<?> invoker, ServiceDescriptor serviceDescriptor, MethodDescriptor methodDescriptor) {
+        RpcInvocation rpcInvocation = super.buildRpcInvocation(invoker, serviceDescriptor, methodDescriptor);
+        HttpHeaders headers = getHttpMetadata().headers();
+        String timeoutString = headers.getFirst(GrpcHeaderNames.GRPC_TIMEOUT.getName());
+        try {
+            if (Objects.nonNull(timeoutString)) {
+                Long timeout = GrpcUtils.parseTimeoutToMills(timeoutString);
+                rpcInvocation.put("timeout", timeout);
+            }
+        } catch (Throwable t) {
+            LOGGER.warn(PROTOCOL_FAILED_PARSE, "", "", String.format("Failed to parse request timeout set from:%s, service=%s "
+                + "method=%s", timeoutString, serviceDescriptor.getInterfaceName(), getMethodDescriptor().getMethodName()));
+        }
+        return rpcInvocation;
     }
 
     @Override
@@ -67,7 +97,7 @@ public class GrpcHttp2ServerTransportListener extends GenericHttp2ServerTranspor
                 DeCompressor compressor = DeCompressor.getCompressor(getFrameworkModel(),
                     messageEncoding);
                 if (null == compressor) {
-                    throw new UnimplementedException("grpc-encoding '" + messageEncoding + "'");
+                    throw new UnimplementedException(GrpcHeaderNames.GRPC_ENCODING.getName() + " '" + messageEncoding + "'");
                 }
                 getStreamingDecoder().setDeCompressor(compressor);
             }
