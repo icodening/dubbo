@@ -17,6 +17,7 @@
 package org.apache.dubbo.rpc.protocol.tri.h12.grpc;
 
 import com.google.protobuf.Message;
+import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.remoting.http12.exception.DecodeException;
 import org.apache.dubbo.remoting.http12.exception.EncodeException;
 import org.apache.dubbo.remoting.http12.message.HttpMessageCodec;
@@ -32,6 +33,7 @@ import java.io.OutputStream;
  *
  * @since 3.3
  */
+@Activate
 public class GrpcCompositeCodec implements HttpMessageCodec {
 
     public static final GrpcCompositeCodec INSTANCE = new GrpcCompositeCodec();

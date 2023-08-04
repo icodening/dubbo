@@ -17,11 +17,11 @@
 package org.apache.dubbo.remoting.http12.message;
 
 import com.alibaba.fastjson2.JSONObject;
+import org.apache.dubbo.common.extension.Activate;
 import org.apache.dubbo.common.utils.JsonUtils;
 import org.apache.dubbo.remoting.http12.exception.DecodeException;
 import org.apache.dubbo.remoting.http12.exception.EncodeException;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +31,7 @@ import java.util.List;
 /**
  * body is json
  */
+@Activate
 public class JsonCodec implements HttpMessageCodec {
 
     public static final HttpMessageCodec INSTANCE = new JsonCodec();
