@@ -69,11 +69,6 @@ public class DefaultHttp11ServerTransportListener extends AbstractServerTranspor
     }
 
     @Override
-    public HttpChannel getHttpChannel() {
-        return this.httpChannel;
-    }
-
-    @Override
     protected ListeningDecoder newListeningDecoder(HttpMessageCodec codec, Class<?>[] actualRequestTypes) {
         DefaultListeningDecoder defaultListeningDecoder = new DefaultListeningDecoder(codec, actualRequestTypes);
         ServerCallListener serverCallListener = startListener(getRpcInvocation(), getMethodDescriptor(), getInvoker());

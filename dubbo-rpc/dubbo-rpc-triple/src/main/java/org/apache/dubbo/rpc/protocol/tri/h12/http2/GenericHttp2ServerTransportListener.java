@@ -63,11 +63,6 @@ public class GenericHttp2ServerTransportListener extends AbstractServerTransport
     }
 
     @Override
-    public H2StreamChannel getHttpChannel() {
-        return this.h2StreamChannel;
-    }
-
-    @Override
     protected Executor initializeExecutor(Http2Header metadata) {
         Executor executor = executorSupport.getExecutor(metadata);
         return new SerializingExecutor(executor);
