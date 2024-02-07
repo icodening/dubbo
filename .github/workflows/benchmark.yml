@@ -78,14 +78,16 @@ jobs:
           java-version: '8'
           distribution: 'zulu'
 
+      - name: Setup dubbo version
+        run: |
+          bash ./prepare.sh ${{ needs.build-source.outputs.version }}
+
       - name: Run benchmark for triple-server
         run: |
-          bash ./prepare.sh
           bash ./benchmark.sh dubbo-triple-server & sleep 60
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./prepare.sh
           bash ./benchmark.sh dubbo-triple-client -f jmh_result.json
 
 
