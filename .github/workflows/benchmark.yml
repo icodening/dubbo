@@ -96,7 +96,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           git checkout --orphan benchmark-result
           git rm -rf .
-          git pull origin benchmark-result
+          git pull origin benchmark-result --ff-only
           git add ./jmh_*
           git commit -m "Add benchmark result"
           git push origin benchmark-result:benchmark-result
