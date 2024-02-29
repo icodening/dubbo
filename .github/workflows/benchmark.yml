@@ -98,7 +98,7 @@ jobs:
           git checkout --orphan benchmark-result
           git rm -rf .
           git pull origin benchmark-result
-          git add ./jmh_*
+          git add ./benchmark
           git commit -m "Add benchmark result"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/icodening/dubbo-benchmark.git benchmark-result:benchmark-result
 #          git push origin benchmark-result:benchmark-result
