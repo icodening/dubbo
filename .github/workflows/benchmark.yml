@@ -91,16 +91,14 @@ jobs:
         run: |
           bash ./benchmark.sh dubbo-triple-client
 
-      - name: Checkout benchmark-result branch
+      - name: Checkout benchmark result
         run: |
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
           git checkout --orphan benchmark-result
-#          git rm -rf .
           git reset --hard origin/benchmark-result
           git add ./benchmark
           git commit -m "Add benchmark result"
-#          git push origin benchmark-result:benchmark-result
 
       - name: Push branch
         uses: ad-m/github-push-action@master
