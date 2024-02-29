@@ -96,7 +96,9 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
           git checkout --orphan benchmark-result
+          git fetch origin benchmark-result
           git rm -rf .
+          git pull origin benchmark-result --ff-only
           git add ./benchmark
           git commit -m "Add benchmark result"
           git pull origin benchmark-result
