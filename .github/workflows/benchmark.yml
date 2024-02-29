@@ -100,7 +100,7 @@ jobs:
           git pull origin benchmark-result
           git add ./jmh_*
           git commit -m "Add benchmark result"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{steps.checkout-dubbo-benchmark.repository}}.git benchmark-result:benchmark-result
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/icodening/dubbo-benchmark.git benchmark-result:benchmark-result
 #          git push origin benchmark-result:benchmark-result
 
 #      - name: Store benchmark result
