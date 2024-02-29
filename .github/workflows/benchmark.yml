@@ -97,16 +97,16 @@ jobs:
           git config --global user.name "GitHub Actions"
           git checkout --orphan benchmark-result
           git rm -rf .
-          git pull origin benchmark-result
           git add ./benchmark
           git commit -m "Add benchmark result"
+          git pull origin benchmark-result
 
       - name: Push branch
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}  # 使用内置的 GITHUB_TOKEN 授权
           branch: benchmark-result  # 推送的分支名称，应与之前创建的 orphan 分支名称相匹配
-          force: false  # 强制推送，以确保远程分支与本地分支同步
+#          force: false  # 强制推送，以确保远程分支与本地分支同步
 
 #      - name: Store benchmark result
 #        uses: benchmark-action/github-action-benchmark@v1
