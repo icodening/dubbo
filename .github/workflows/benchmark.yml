@@ -101,7 +101,7 @@ jobs:
           git fetch origin benchmark-result
           git rm -rf .
           git pull origin benchmark-result
-          git add ./benchmark
+          git add ./triple
           git commit -m "Add benchmark result"
 
       - name: Push branch
