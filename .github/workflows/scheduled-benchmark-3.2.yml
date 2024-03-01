@@ -83,7 +83,7 @@ jobs:
 
       - name: Setup dubbo version
         run: |
-          bash ./prepare.sh dubbo-3.3.0-beta.1
+          bash ./prepare.sh dubbo-3.2.11
       #          bash ./prepare.sh ${{ needs.build-source.outputs.version }}
 
       - name: Run benchmark for triple-server
@@ -92,7 +92,7 @@ jobs:
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh -a -benchmarkName=triple-3.3 dubbo-triple-client
+          bash ./benchmark.sh -a -benchmarkName=triple-3.2 dubbo-triple-client
 
       - name: Checkout benchmark result
         run: |
@@ -102,7 +102,7 @@ jobs:
           git fetch origin benchmark-result
           git rm -rf .
           git pull origin benchmark-result
-          git add ./triple-3.3
+          git add ./triple-3.2
           git commit -m "Add benchmark result"
 
       - name: Push branch
