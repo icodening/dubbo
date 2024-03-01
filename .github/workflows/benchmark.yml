@@ -3,11 +3,11 @@ on:
   push:
     branches:
       - benchmark-proposal
-permissions: write-all
-#   deployments permission to deploy GitHub pages website
-#  deployments: write
-#   contents permission to update benchmark contents in gh-pages branch
-#  contents: write
+permissions:
+  # deployments permission to deploy GitHub pages website
+  deployments: write
+  # contents permission to update benchmark contents in gh-pages branch
+  contents: write
 jobs:
 #  build-source:
 #    name: "Build Dubbo"
@@ -58,7 +58,7 @@ jobs:
         with:
           repository: 'icodening/dubbo-benchmark'
           ref: benchmark-proposal
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.BENCHMARK }}
 #      - name: "Cache local Maven repository"
 #        uses: actions/cache@v3
 #        with:
@@ -91,7 +91,7 @@ jobs:
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh dubbo-triple-client
+          bash ./benchmark.sh dubbo-triple-client -benchmarkName triple
 
       - name: Checkout benchmark result
         run: |
@@ -107,8 +107,8 @@ jobs:
       - name: Push branch
         uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}  # 使用内置的 GITHUB_TOKEN 授权
-          branch: benchmark-result  # 推送的分支名称，应与之前创建的 orphan 分支名称相匹配
+          github_token: ${{ secrets.BENCHMARK }}  # 使用内置的 PERSONAL TOKEN 授权
+          branch: benchmark-result
           repository: icodening/dubbo-benchmark
 #          force: false  # 强制推送，以确保远程分支与本地分支同步
 
