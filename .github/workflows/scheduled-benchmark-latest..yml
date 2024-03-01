@@ -64,22 +64,22 @@ jobs:
           repository: 'icodening/dubbo-benchmark'
           ref: benchmark-proposal
           token: ${{ secrets.BENCHMARK }}
-            - name: "Cache local Maven repository"
-              uses: actions/cache@v3
-              with:
-                path: ~/.m2/repository
-                key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
-                restore-keys: |
-                  ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-                  ${{ runner.os }}-maven-
-            - name: "Restore Dubbo cache"
-              uses: actions/cache@v3
-              with:
-                path: ~/.m2/repository/org/apache/dubbo
-                key: ${{ runner.os }}-dubbo-snapshot-${{ github.sha }}-${{ github.run_id }}
-                restore-keys: |
-                  ${{ runner.os }}-dubbo-snapshot-${{ github.sha }}
-                  ${{ runner.os }}-dubbo-snapshot-
+      - name: "Cache local Maven repository"
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+            ${{ runner.os }}-maven-
+      - name: "Restore Dubbo cache"
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository/org/apache/dubbo
+          key: ${{ runner.os }}-dubbo-snapshot-${{ github.sha }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-dubbo-snapshot-${{ github.sha }}
+            ${{ runner.os }}-dubbo-snapshot-
       - uses: actions/setup-java@v3
         with:
           java-version: '8'
