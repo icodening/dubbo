@@ -91,7 +91,7 @@ jobs:
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh -benchmarkName=triple-3.2 dubbo-triple-client
+          bash ./benchmark.sh -a -benchmarkName=triple-3.2 dubbo-triple-client
 
       - name: Checkout benchmark result
         run: |
