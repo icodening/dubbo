@@ -1,4 +1,4 @@
-name: Scheduled Benchmark
+name: Scheduled Benchmark 3.2
 on:
   schedule:
     - cron: '0/5 * * * *'
@@ -83,7 +83,7 @@ jobs:
 
       - name: Setup dubbo version
         run: |
-          bash ./prepare.sh dubbo-3.2.11
+          bash ./prepare.sh 3.2.11
       #          bash ./prepare.sh ${{ needs.build-source.outputs.version }}
 
       - name: Run benchmark for triple-server
