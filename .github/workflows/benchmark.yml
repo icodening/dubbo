@@ -3,11 +3,11 @@ on:
   push:
     branches:
       - benchmark-proposal
-permissions:
-  # deployments permission to deploy GitHub pages website
-  deployments: write
-  # contents permission to update benchmark contents in gh-pages branch
-  contents: write
+permissions: write-all
+#   deployments permission to deploy GitHub pages website
+#  deployments: write
+#   contents permission to update benchmark contents in gh-pages branch
+#  contents: write
 jobs:
 #  build-source:
 #    name: "Build Dubbo"
