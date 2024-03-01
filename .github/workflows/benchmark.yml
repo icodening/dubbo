@@ -58,7 +58,7 @@ jobs:
         with:
           repository: 'icodening/dubbo-benchmark'
           ref: benchmark-proposal
-          token: ${{ secrets.BENCHMARK }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 #      - name: "Cache local Maven repository"
 #        uses: actions/cache@v3
 #        with:
@@ -107,7 +107,7 @@ jobs:
       - name: Push branch
         uses: ad-m/github-push-action@master
         with:
-          github_token: ${{ secrets.BENCHMARK }}  # 使用内置的 GITHUB_TOKEN 授权
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # 使用内置的 GITHUB_TOKEN 授权
           branch: benchmark-result  # 推送的分支名称，应与之前创建的 orphan 分支名称相匹配
           repository: icodening/dubbo-benchmark
 #          force: false  # 强制推送，以确保远程分支与本地分支同步
