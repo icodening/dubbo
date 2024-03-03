@@ -1,7 +1,7 @@
 name: Scheduled Benchmark 3.2
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
 #    - cron: '0 0 * * *'
   workflow_dispatch:
 
@@ -13,7 +13,6 @@ permissions:
 jobs:
   benchmark-triple:
     name: benchmark-triple
-    #    needs: [build-source]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -38,17 +37,6 @@ jobs:
       - name: Run benchmark for triple-client
         run: |
           bash ./benchmark.sh -a -benchmarkName=triple-3.2 dubbo-triple-client
-          jps -l | grep "dubbo-triple-server" | awk '{print $1}' |xargs kill
-
-      - name: Run benchmark for dubbo-fastjson2-server
-        run: |
-          bash ./benchmark.sh dubbo-fastjson2-server & sleep 60
-
-      - name: Run benchmark for dubbo-fastjson2-client
-        run: |
-          bash ./benchmark.sh -a -benchmarkName=dubbo-fastjson2-3.2 dubbo-fastjson2-client
-          jps -l | grep "dubbo-fastjson2-server" | awk '{print $1}' |xargs kill
-
       #--------------------------------benchmark----------------------------------
 
       - name: Checkout benchmark result
@@ -60,6 +48,52 @@ jobs:
           git rm -rf .
           git pull origin benchmark-result
           git add ./triple-3.2
+          git commit -m "Add benchmark result"
+
+      - name: Push branch
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.BENCHMARK }}  # 使用内置的 PERSONAL TOKEN 授权
+          branch: benchmark-result
+          repository: icodening/dubbo-benchmark
+
+  benchmark-dubbo:
+    name: benchmark-dubbo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        id: checkout-dubbo-benchmark
+        with:
+          repository: 'icodening/dubbo-benchmark'
+          ref: benchmark-proposal
+          token: ${{ secrets.BENCHMARK }}
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '8'
+          distribution: 'zulu'
+      #--------------------------------benchmark----------------------------------
+      - name: Setup dubbo version
+        run: |
+          bash ./prepare.sh 3.2.11
+
+      - name: Run benchmark for dubbo-fastjson2-server
+        run: |
+          bash ./benchmark.sh dubbo-fastjson2-server & sleep 60
+
+      - name: Run benchmark for dubbo-fastjson2-client
+        run: |
+          bash ./benchmark.sh -a -benchmarkName=dubbo-fastjson2-3.2 dubbo-fastjson2-client
+
+      #--------------------------------benchmark----------------------------------
+
+      - name: Checkout benchmark result
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git checkout --orphan benchmark-result
+          git fetch origin benchmark-result
+          git rm -rf .
+          git pull origin benchmark-result
           git add ./dubbo-fastjson2-3.2
           git commit -m "Add benchmark result"
 
@@ -69,3 +103,4 @@ jobs:
           github_token: ${{ secrets.BENCHMARK }}  # 使用内置的 PERSONAL TOKEN 授权
           branch: benchmark-result
           repository: icodening/dubbo-benchmark
+
