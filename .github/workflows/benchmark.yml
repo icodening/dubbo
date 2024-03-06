@@ -87,11 +87,11 @@ jobs:
 
       - name: Run benchmark for triple-server
         run: |
-          bash ./benchmark.sh dubbo-triple-server & sleep 60
+          bash ./benchmark.sh -m profiling dubbo-triple-server & sleep 60
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh -a -benchmarkName=triple-3.2 dubbo-triple-client
+          bash ./benchmark.sh -m profiling -a -benchmarkName=triple-3.2 dubbo-triple-client
 
       - name: Checkout benchmark result
         run: |
@@ -102,6 +102,7 @@ jobs:
           git rm -rf .
           git pull origin benchmark-result
           git add ./triple-3.2
+          git add ./profiling
           git commit -m "Add benchmark result"
 
       - name: Push branch
