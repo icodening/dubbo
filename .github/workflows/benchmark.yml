@@ -100,6 +100,7 @@ jobs:
           git checkout --orphan benchmark-result
           git fetch origin benchmark-result
           git rm -rf .
+          mv ./profiling/dubbo-triple-client ./profiling/dubbo-triple-client-3.2
           git pull origin benchmark-result
           git add ./triple-3.2
           git add ./profiling
