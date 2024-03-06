@@ -84,6 +84,9 @@ jobs:
         run: |
           bash ./prepare.sh 3.2.11
 #          bash ./prepare.sh ${{ needs.build-source.outputs.version }}
+      - name: Set Perf Event Paranoid
+        run: |
+          sysctl kernel.perf_event_paranoid=1
 
       - name: Run benchmark for triple-server
         run: |
