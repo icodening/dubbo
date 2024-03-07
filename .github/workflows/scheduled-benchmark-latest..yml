@@ -1,8 +1,8 @@
 name: Scheduled Benchmark Latest
 on:
   schedule:
-#    - cron: '*/15 * * * *'
-    - cron: '0 0 * * *'
+    - cron: '*/30 * * * *'
+#    - cron: '0 0 * * *'
   workflow_dispatch:
 
 permissions:
@@ -96,8 +96,7 @@ jobs:
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh -a -benchmarkName=triple-${{ needs.build-source.outputs.minor-version }} dubbo-triple-client
-          jps -l | grep "dubbo-triple-server" | awk '{print $1}' |xargs kill
+          bash ./benchmark.sh -m profiling -a -benchmarkName=triple-${{ needs.build-source.outputs.minor-version }} dubbo-triple-client
 
       - name: Checkout benchmark result
         run: |
@@ -108,6 +107,7 @@ jobs:
           git rm -rf .
           git pull origin benchmark-result
           git add ./triple-${{ needs.build-source.outputs.minor-version }}
+          git add ./profiling
           git commit -m "Add benchmark result"
 
       - name: Push branch

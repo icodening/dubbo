@@ -1,8 +1,8 @@
 name: Scheduled Benchmark 3.2
 on:
   schedule:
-#    - cron: '*/15 * * * *'
-    - cron: '0 0 * * *'
+    - cron: '*/30 * * * *'
+#    - cron: '0 0 * * *'
   workflow_dispatch:
 
 permissions:
@@ -36,7 +36,7 @@ jobs:
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh -a -benchmarkName=triple-3.2 dubbo-triple-client
+          bash ./benchmark.sh -m profiling -a -benchmarkName=triple-3.2 dubbo-triple-client
       #--------------------------------benchmark----------------------------------
 
       - name: Checkout benchmark result
@@ -48,6 +48,7 @@ jobs:
           git rm -rf .
           git pull origin benchmark-result
           git add ./triple-3.2
+          git add ./profiling
           git commit -m "Add benchmark result"
 
       - name: Push branch
