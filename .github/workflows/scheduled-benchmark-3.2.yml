@@ -32,22 +32,25 @@ jobs:
 
       - name: Run benchmark for triple-server
         run: |
-          bash ./benchmark.sh dubbo-triple-server & sleep 60
+          bash ./benchmark.sh -m profiling dubbo-triple-server & sleep 60
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh -m profiling -a -benchmarkName=triple-3.2 dubbo-triple-client
+          bash ./benchmark.sh -m profiling dubbo-triple-client
       #--------------------------------benchmark----------------------------------
 
       - name: Checkout benchmark result
         run: |
+          mkdir -p benchmark/dubbo-triple-client/3.2/ && mv *.json benchmark/dubbo-triple-client/3.2/
+          mkdir -p profiling/dubbo-triple-client/3.2/ && mv dubbo-triple-client/*.jfr profiling/dubbo-triple-client/3.2/
+          mkdir -p profiling/dubbo-triple-server/3.2/ && mv dubbo-triple-server/*.jfr profiling/dubbo-triple-server/3.2/
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
           git checkout --orphan benchmark-result
           git fetch origin benchmark-result
           git rm -rf .
           git pull origin benchmark-result
-          git add ./triple-3.2
+          git add ./benchmark
           git add ./profiling
           git commit -m "Add benchmark result"
 

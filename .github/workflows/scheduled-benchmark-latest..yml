@@ -92,21 +92,24 @@ jobs:
 
       - name: Run benchmark for triple-server
         run: |
-          bash ./benchmark.sh dubbo-triple-server & sleep 60
+          bash ./benchmark.sh -m profiling dubbo-triple-server & sleep 60
 
       - name: Run benchmark for triple-client
         run: |
-          bash ./benchmark.sh -m profiling -a -benchmarkName=triple-${{ needs.build-source.outputs.minor-version }} dubbo-triple-client
+          bash ./benchmark.sh -m profiling dubbo-triple-client
 
       - name: Checkout benchmark result
         run: |
+          mkdir -p benchmark/dubbo-triple-client/${{ needs.build-source.outputs.minor-version }}/ && mv *.json benchmark/dubbo-triple-client/${{ needs.build-source.outputs.minor-version }}/
+          mkdir -p profiling/dubbo-triple-client/${{ needs.build-source.outputs.minor-version }}/ && mv dubbo-triple-client/*.jfr profiling/dubbo-triple-client/${{ needs.build-source.outputs.minor-version }}/
+          mkdir -p profiling/dubbo-triple-server/${{ needs.build-source.outputs.minor-version }}/ && mv dubbo-triple-server/*.jfr profiling/dubbo-triple-server/${{ needs.build-source.outputs.minor-version }}/
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
           git checkout --orphan benchmark-result
           git fetch origin benchmark-result
           git rm -rf .
           git pull origin benchmark-result
-          git add ./triple-${{ needs.build-source.outputs.minor-version }}
+          git add ./benchmark
           git add ./profiling
           git commit -m "Add benchmark result"
 
