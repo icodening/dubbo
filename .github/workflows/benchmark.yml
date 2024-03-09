@@ -82,7 +82,6 @@ jobs:
 
       - name: Setup dubbo version
         run: |
-          echo ${{ secrets.BENCHMARK }}
           bash ./prepare.sh 3.2.11
 #          bash ./prepare.sh ${{ needs.build-source.outputs.version }}
 
