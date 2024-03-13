@@ -1,8 +1,11 @@
 name: Scheduled Benchmark 3.2
 on:
-  schedule:
+#  schedule:
 #    - cron: '*/30 * * * *'
-    - cron: '0 0 * * *'
+#    - cron: '0 0 * * *'
+  push:
+    branches:
+      - benchmark-proposal
   workflow_dispatch:
 
 permissions:

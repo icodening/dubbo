@@ -1,8 +1,11 @@
 name: Scheduled Benchmark Latest
 on:
-  schedule:
-#    - cron: '*/30 * * * *'
-    - cron: '0 0 * * *'
+#  schedule:
+##    - cron: '*/30 * * * *'
+#    - cron: '0 0 * * *'
+  push:
+    branches:
+      - benchmark-proposal
   workflow_dispatch:
 
 permissions:
